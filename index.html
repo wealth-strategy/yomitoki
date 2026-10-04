@@ -1,0 +1,185 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#14161a">
+<title>よみとき 開発状況</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Shippori+Mincho+B1:wght@600;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f7f4ef; --card:#fff; --sunk:#efebe4; --line:#e3ded5; --line2:#cdc5b8;
+  --ink:#1e2128; --soft:#5a616d; --faint:#8b929e;
+  --brand:#e2674f; --brand-s:#fbe9e3; --brand-d:#bf4e38;
+  --ok:#17757d; --ok-s:#dcefef;
+  --warn:#9a7420; --warn-s:#f6edd6;
+  --sh:0 1px 2px rgba(30,33,40,.05),0 8px 22px rgba(30,33,40,.07);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#14161a; --card:#1d2026; --sunk:#252931; --line:#2e333b; --line2:#424a56;
+  --ink:#eef0f4; --soft:#a4abb7; --faint:#79818e;
+  --brand:#f08a70; --brand-s:#2d1d18; --brand-d:#e2674f;
+  --ok:#53c2ca; --ok-s:#11292b; --warn:#d9b069; --warn-s:#2c2415;
+  --sh:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.45);
+}}
+:root[data-theme="dark"]{
+  --bg:#14161a; --card:#1d2026; --sunk:#252931; --line:#2e333b; --line2:#424a56;
+  --ink:#eef0f4; --soft:#a4abb7; --faint:#79818e;
+  --brand:#f08a70; --brand-s:#2d1d18; --brand-d:#e2674f;
+  --ok:#53c2ca; --ok-s:#11292b; --warn:#d9b069; --warn-s:#2c2415;
+  --sh:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden;
+  font-family:"Zen Kaku Gothic New","Hiragino Sans",system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.85;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;
+  padding:max(26px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-left)) calc(60px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right))}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.24em;color:var(--brand);margin:0 0 10px}
+h1{font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:clamp(30px,8.4vw,42px);
+  margin:0 0 10px;letter-spacing:.02em;line-height:1.3;text-wrap:balance}
+.sub{margin:0;color:var(--soft);font-size:15px;line-height:1.85}
+.sub b{color:var(--ink)}
+
+.hero{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:20px 18px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:14px}
+.badge{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--ok-s);
+  color:var(--ok);border-radius:30px;padding:5px 13px;font-size:12.5px;font-weight:700}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.hero h2{margin:0;font-family:"Shippori Mincho B1",serif;font-size:21px;font-weight:800;line-height:1.5}
+.hero p{margin:0;font-size:14.5px;color:var(--soft);line-height:1.85}
+.meter{display:flex;flex-direction:column;gap:7px}
+.meter .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--faint);font-weight:700}
+.meter .top b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:17px}
+.meter .bar{height:10px;border-radius:10px;background:var(--sunk);overflow:hidden;display:flex}
+.meter .f1{background:var(--ok)}
+.meter .f2{background:var(--warn)}
+.meter .key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--faint)}
+.meter .key i{font-style:normal;display:inline-flex;align-items:center;gap:5px}
+.meter .key .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+.cta{display:block;margin-top:16px;background:var(--brand);color:#fff;text-decoration:none;
+  border-radius:14px;padding:16px 18px;min-height:52px;text-align:center;font-weight:700;font-size:16px;
+  box-shadow:0 6px 18px rgba(226,103,79,.3)}
+.cta span{display:block;font-weight:400;font-size:12px;opacity:.9;margin-top:2px}
+
+h3{font-family:"Shippori Mincho B1",serif;font-size:19px;font-weight:800;margin:36px 0 4px;letter-spacing:.02em}
+.lead{margin:0 0 14px;font-size:13.5px;color:var(--faint);line-height:1.8}
+
+.grp{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);
+  overflow:hidden;margin-bottom:12px}
+.grp > h4{margin:0;padding:13px 16px 11px;font-size:12px;font-weight:700;letter-spacing:.1em;
+  color:var(--faint);border-bottom:1px solid var(--line);background:var(--sunk)}
+.grp ul{list-style:none;margin:0;padding:6px 0}
+.grp li{display:flex;gap:11px;padding:9px 16px;font-size:14.5px;line-height:1.7;align-items:flex-start}
+.grp li + li{border-top:1px solid var(--line)}
+.ic{flex:none;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;margin-top:3px}
+.ic.d{background:var(--ok-s);color:var(--ok)}
+.ic.p{background:var(--warn-s);color:var(--warn)}
+.ic.n{background:var(--sunk);color:var(--faint)}
+.li-b{flex:1;min-width:0}
+.li-b b{display:block;font-weight:700}
+.li-b span{display:block;font-size:12.5px;color:var(--faint);line-height:1.7;margin-top:1px}
+
+.quote{margin:26px 0 0;background:var(--brand-s);border:1px solid rgba(226,103,79,.3);
+  border-radius:16px;padding:17px 18px}
+.quote h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;color:var(--brand-d);font-weight:700}
+.quote p{margin:0;font-size:14.5px;line-height:1.9}
+.quote .ex{margin-top:10px;padding:12px 14px;background:var(--card);border-radius:11px;
+  font-size:13.5px;line-height:1.85;color:var(--ink)}
+.quote .ex em{font-style:normal;color:var(--brand-d);font-weight:700}
+
+.note{margin:26px 0 0;font-size:12.5px;color:var(--faint);line-height:1.9}
+.note b{color:var(--soft)}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--faint);line-height:1.9}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">PROTOTYPE STATUS</p>
+  <h1>よみとき</h1>
+  <p class="sub">LINEのやり取りを読み込んで、<b>相手との関係がいまどうなっているか</b>を出すアプリです。いま試作が動いていて、iPhoneのブラウザからそのまま触れます。</p>
+
+  <section class="hero">
+    <span class="badge"><span class="dot"></span>試作が動いています</span>
+    <h2>ひと通り最後まで通る状態です</h2>
+    <p>履歴を貼る → 解析 → 結果 → 返信案、まで全部つながっています。登録もインストールも要りません。</p>
+    <div class="meter">
+      <div class="top"><span>できている機能</span><b>14 / 17</b></div>
+      <div class="bar"><span class="f1" style="width:82.4%"></span><span class="f2" style="width:5.9%"></span></div>
+      <div class="key">
+        <i><span class="sw" style="background:var(--ok)"></span>完成 14</i>
+        <i><span class="sw" style="background:var(--warn)"></span>作りかえ中 1</i>
+        <i><span class="sw" style="background:var(--line2)"></span>未着手 2</i>
+      </div>
+    </div>
+    <a class="cta" href="./app.html">試作を触ってみる<span>サンプルが入っているので、履歴がなくても試せます</span></a>
+  </section>
+
+  <h3>できていること</h3>
+  <p class="lead">14項目。ここはもう動きます。</p>
+
+  <div class="grp">
+    <h4>履歴を読む</h4>
+    <ul>
+      <li><span class="ic d">✓</span><span class="li-b"><b>LINEの履歴ファイルを解析</b><span>iPhone・Android どちらの書き出し形式にも対応。午前／午後の表記も読めます</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>どちらが自分かを選ぶ</b><span>名前を選ぶと、自分側と相手側に分けて集計します</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>端末の外にデータを出さない</b><span>解析はすべてブラウザの中。本文がサーバーに送られることはありません</span></span></li>
+    </ul>
+  </div>
+
+  <div class="grp">
+    <h4>関係を測る</h4>
+    <ul>
+      <li><span class="ic d">✓</span><span class="li-b"><b>噛み合いスコア（100点）</b><span>相手からの働きかけ・テンポの一致・会話の続き方・自分の持ち出し、の4つを加点して出します</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>いまの状態に名前がつく</b><span>冷却期／片道LINE／追い風／温度差／一人語り／反転のきざし／ラリー成立／受け身どまり／様子見／安定 の10種</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>効いていること／いちばんの課題</b><span>悪いところだけでなく、うまくいっている点が必ず1つ出ます</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>今日やること、ひとつだけ</b><span>状態に合わせて、やることを1個だけ出します。無料</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>関係の種類を選べる</b><span>恋愛・友達・職場・取引先・接客。相手によって読み方が変わります</span></span></li>
+    </ul>
+  </div>
+
+  <div class="grp">
+    <h4>連絡タイプ診断</h4>
+    <ul>
+      <li><span class="ic d">✓</span><span class="li-b"><b>16問・5段階</b><span>「いちばん気になっている人を一人思い浮かべて」と対象を固定してから聞きます。相手によって変わる問題を避けるため</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>4つの軸の濃度が％で出る</b><span>即レス／寝かせる・そのまま出す／ひねる・長文／短文・誰にでも同じ／相手で変える</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>16キャラクターに分かれる</b><span>ダダ漏れ天使、ツンデレ狼、放置魔、闇深スパイ など。結果はそのままシェアできます</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>相手のタイプを入れると読み方が変わる</b><span>同じ「返信138分」でも、元々そういう人かどうかで意味が正反対になります</span></span></li>
+    </ul>
+  </div>
+
+  <div class="grp">
+    <h4>続けて使う</h4>
+    <ul>
+      <li><span class="ic d">✓</span><span class="li-b"><b>出来事の記録</b><span>「9/7 告白した」のように日付と一言を入れると、その前後で何が変わったかが出ます</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>相手ごとのメモ</b><span>会った回数や話題を書いておけます。端末に保存</span></span></li>
+      <li><span class="ic d">✓</span><span class="li-b"><b>返信案（3回まで無料）</b><span>状況を書くと、送る文の案が出ます</span></span></li>
+    </ul>
+  </div>
+
+  <h3>いま手を入れているところ</h3>
+  <p class="lead">3項目。ここが終わると、人に配れる状態になります。</p>
+
+  <div class="grp">
+    <ul>
+      <li><span class="ic p">…</span><span class="li-b"><b>16キャラクターのイラスト</b><span>いまはコードで描いた簡易版。画像で作り直して差し替えます</span></span></li>
+      <li><span class="ic n">—</span><span class="li-b"><b>相手を何人も登録して切り替える</b><span>気になる人・元恋人・上司・取引先を並べて管理できるように。有料プランの中心になる予定</span></span></li>
+      <li><span class="ic n">—</span><span class="li-b"><b>LINE公式アカウント版</b><span>本番はこちら。ファイルを探す操作が消えて、トーク履歴を「共有 → よみとき」に送るだけになります</span></span></li>
+    </ul>
+  </div>
+
+  <div class="quote">
+    <h4>いちばんの武器</h4>
+    <p><b>出来事の前後で、やり取りがどう変わったかが出ること。</b>日付と一言を入れるだけで、その日を境に何が起きたかが数字で出ます。</p>
+    <div class="ex">9/7 告白した<br>→ この日から、相手の返信が <em>35.7倍</em> 遅くなっています。1通の長さが <em>13字 → 4字</em> に減っています</div>
+  </div>
+
+  <p class="note"><b>見るときの注意。</b>これは完成品ではなく、触って確かめるための試作です。返信案は型に沿った雛形で、本番では文体を学習して作ります。履歴がなくても「サンプルで試す」から30秒で中身が見られます。</p>
+
+  <footer>
+    よみとき ／ 試作版<br>
+    このページと試作は、どちらもiPhoneのブラウザでそのまま開けます。
+  </footer>
+</div>
+</body></html>
