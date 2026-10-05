@@ -241,6 +241,25 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 @media (prefers-reduced-motion:reduce){.fstep.now .no{animation:none}}
 .alt{font-size:12.5px;color:var(--faint);line-height:1.8;text-align:center;margin:0}
 .alt button{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+/* 16キャラのスライド */
+.mq{overflow:hidden;position:relative;margin:0 -16px 2px;padding:2px 0}
+.mq::before,.mq::after{content:"";position:absolute;top:0;bottom:0;width:38px;z-index:2;pointer-events:none}
+.mq::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.mq::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.mq .track{display:flex;gap:8px;width:max-content;animation:mqs 46s linear infinite}
+.mq img{width:74px;aspect-ratio:271/362;object-fit:cover;border-radius:11px;display:block;
+  box-shadow:0 3px 10px rgba(0,0,0,.16)}
+@keyframes mqs{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.mq .track{animation:none}}
+.mqcap{text-align:center;font-size:11.5px;color:var(--faint);margin:0 0 2px}
+
+/* 区切り */
+.sep{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;margin:22px 0 2px;
+  font-weight:700;letter-spacing:.04em}
+.sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.ftiny{text-align:center;font-size:12.5px;color:var(--faint);margin:2px 0 0}
+.ftiny button{background:none;border:0;color:var(--brand);font:inherit;font-weight:700;
+  text-decoration:underline;cursor:pointer;padding:8px 4px;min-height:40px}
 .ctbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px;display:flex;flex-direction:column;gap:10px}
 .ctbox h5{margin:0;font-size:12.5px;font-weight:700;color:var(--brand);letter-spacing:.04em}
 .q-bar{padding:0 16px}
@@ -503,42 +522,39 @@ b{font-weight:700}
   <div class="hero">
     <h1 class="logo">よみ<em>とき</em></h1>
     <p class="tag">LINEのやり取りから、相手とあなたを読み解く</p>
-    <div class="steps"><span>01 履歴を渡す</span><span>02 解析</span><span>03 返信案</span></div>
+    <div class="steps"><span>01 自分を知る</span><span>02 相手を読む</span><span>03 返信案</span></div>
   </div>
   <div class="pad">
-    <p class="alt" style="text-align:left;color:var(--soft);font-size:13.5px;margin:0 0 2px">
-      LINEの履歴を、<b>3ステップ</b>でここに持ってきます。</p>
+
+    <div class="mq"><div class="track" id="mqTrack"></div></div>
+    <p class="mqcap">あなたはこの16人のうち、どれ？</p>
+
+    <div class="ctbox">
+      <h5>まずは ── 自分の連絡タイプを調べる</h5>
+      <p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">16問・2分。<b>履歴は要りません。</b>気になる人をひとり思い浮かべて答えると、4つの軸の濃さと<b>キャラクター</b>が出ます。<br>結果はそのままシェアできます。</p>
+      <button class="btn" onclick="startCT()">連絡タイプ診断をはじめる（無料）</button>
+      <div id="myTypeNow"></div>
+    </div>
+
+    <div class="sep">LINEの履歴から、関係を読み解く</div>
 
     <div class="flow">
       <div class="fstep">
         <span class="no">1</span>
         <div class="bd">
-          <h6>LINEで、履歴を書き出す</h6>
+          <h6>LINEで履歴を書き出して、コピー</h6>
           <div class="tap">
             <span>相手とのトーク</span><span class="ar">▸</span>
             <span class="k">右上 ≡</span><span class="ar">▸</span>
             <span class="k">設定</span><span class="ar">▸</span>
-            <span class="k">トーク履歴を送信</span>
-          </div>
-          <p class="sub">共有メニューが開きます。</p>
-        </div>
-      </div>
-
-      <div class="fstep">
-        <span class="no">2</span>
-        <div class="bd">
-          <h6>そこから「コピー」を選ぶ</h6>
-          <div class="tap">
+            <span class="k">トーク履歴を送信</span><span class="ar">▸</span>
             <span class="k">コピー</span>
-            <span class="ar">／ 見あたらなければ</span>
-            <span class="k">"ファイル"に保存</span>
           </div>
-          <p class="sub">コピーできた人は、そのまま下へ。保存した人は、下の「履歴ファイルを選ぶ」から読み込めます。</p>
         </div>
       </div>
 
       <div class="fstep now">
-        <span class="no">3</span>
+        <span class="no">2</span>
         <div class="bd">
           <h6>ここに貼り付ける</h6>
           <p class="sub">下の枠を長押し → <b>ペースト</b> → 読み解く</p>
@@ -546,26 +562,14 @@ b{font-weight:700}
       </div>
     </div>
 
-    <textarea id="paste" placeholder="ここを長押しして、ペースト&#10;&#10;（うまくいかないときは、下の「履歴ファイルを選ぶ」へ）"></textarea>
+    <textarea id="paste" placeholder="ここを長押しして、ペースト"></textarea>
     <button class="btn" id="go">読み解く</button>
 
-    <div class="orline"><span>ファイルに保存した人は</span></div>
-
-    <label class="drop" id="dz" for="file">
-      <span class="ic">📄</span>
-      <span class="t1">履歴ファイルを選ぶ</span>
-      <span class="t2">.txt をドラッグ＆ドロップでも可</span>
-      <input id="file" type="file" accept=".txt,text/plain" style="display:none">
-    </label>
+    <p class="ftiny">コピーがうまくいかないときは <button onclick="document.getElementById('file').click()">履歴ファイルを選ぶ</button>
+      <input id="file" type="file" accept=".txt,text/plain" style="display:none"></p>
 
     <button class="btn g" id="demo">サンプルで試す（30秒）</button>
 
-    <div class="ctbox">
-      <h5>その前に ── 自分の連絡タイプを調べる</h5>
-      <p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">16問・2分。<b>履歴は要りません。</b>5段階で答えると、4つの軸の濃さと<b>キャラクター名</b>が出ます。<br>結果はそのままシェアできます。</p>
-      <button class="btn" onclick="startCT()">連絡タイプ診断をはじめる（無料）</button>
-      <div id="myTypeNow"></div>
-    </div>
     <div id="err"></div>
 
     <div class="future">
@@ -2354,13 +2358,16 @@ var SAMPLE=['[LINE] ミナとのトーク履歴','保存日時：2026/10/01 09:1
   return out.join('\n');
 })();
 document.getElementById('demo').onclick=function(){ start(SAMPLE); };
+(function(){
+  var t=document.getElementById('mqTrack'); if(!t) return;
+  var ks=Object.keys(CT), h='';
+  for(var r=0;r<2;r++) for(var i=0;i<ks.length;i++)
+    h+='<img src="'+ART[ks[i]]+'" alt="'+CT[ks[i]].n+'" aria-hidden="'+(r?'true':'false')+'">';
+  t.innerHTML=h;
+})();
 showMyNow();
 (function(){
-  var dz=document.getElementById('dz');
   function rd(f){ var r=new FileReader(); r.onload=function(e){ start(e.target.result); }; r.readAsText(f,'UTF-8'); }
-  ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add('over');}); });
-  ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove('over');}); });
-  dz.addEventListener('drop',function(e){ var f=e.dataTransfer.files[0]; if(f) rd(f); });
   document.addEventListener('dragover',function(e){e.preventDefault();});
   document.addEventListener('drop',function(e){
     e.preventDefault();
