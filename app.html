@@ -154,8 +154,8 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .fig.big{width:min(230px,62vw);border-radius:20px;box-shadow:0 12px 34px rgba(0,0,0,.3)}
 /* 一覧は枠を消して背景を溶かす（1枚のスプライトを共有） */
 .fig.sp{border-radius:0;box-shadow:none;background-color:transparent;background-repeat:no-repeat;
-  -webkit-mask-image:radial-gradient(ellipse 62% 70% at 50% 47%,#000 52%,transparent 86%);
-  mask-image:radial-gradient(ellipse 62% 70% at 50% 47%,#000 52%,transparent 86%)}
+  -webkit-mask-image:radial-gradient(ellipse 58% 66% at 50% 46%,#000 0%,#000 46%,rgba(0,0,0,.92) 62%,rgba(0,0,0,.6) 74%,rgba(0,0,0,.22) 85%,transparent 95%);
+  mask-image:radial-gradient(ellipse 58% 66% at 50% 46%,#000 0%,#000 46%,rgba(0,0,0,.92) 62%,rgba(0,0,0,.6) 74%,rgba(0,0,0,.22) 85%,transparent 95%)}
 .fig.sm{width:64px}
 .fig.xs{width:60px}
 
@@ -251,9 +251,9 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .mq::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
 .mq::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
 .mq .track{display:flex;flex:0 0 auto;animation:mqs 40s linear infinite;will-change:transform}
-.mq .mi{display:block;flex:0 0 auto;width:88px;aspect-ratio:271/362;background-repeat:no-repeat;
-  -webkit-mask-image:radial-gradient(ellipse 62% 70% at 50% 47%,#000 52%,transparent 86%);
-  mask-image:radial-gradient(ellipse 62% 70% at 50% 47%,#000 52%,transparent 86%)}
+.mq .mi{display:block;flex:0 0 auto;width:92px;aspect-ratio:271/362;background-repeat:no-repeat;
+  -webkit-mask-image:radial-gradient(ellipse 58% 66% at 50% 46%,#000 0%,#000 46%,rgba(0,0,0,.92) 62%,rgba(0,0,0,.6) 74%,rgba(0,0,0,.22) 85%,transparent 95%);
+  mask-image:radial-gradient(ellipse 58% 66% at 50% 46%,#000 0%,#000 46%,rgba(0,0,0,.92) 62%,rgba(0,0,0,.6) 74%,rgba(0,0,0,.22) 85%,transparent 95%)}
 @keyframes mqs{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media (prefers-reduced-motion:reduce){.mq .track{animation:none}}
 .mqcap{text-align:center;font-size:13.5px;color:var(--soft);margin:4px 0 2px;font-weight:700}
@@ -1149,12 +1149,18 @@ var CT={
  STBC:{e:'🕵️',i:'spy',n:'闇深スパイ',t:'相手によって別人。意図的に読ませない',k:'わざと分からなくしている'}
 };
 var ORD=['QDLF','QDLC','QDBF','QDBC','QTLF','QTLC','QTBF','QTBC','SDLF','SDLC','SDBF','SDBC','STLF','STLC','STBF','STBC'];
-/* サムネは1枚のスプライトを共有する（端末のメモリ対策） */
+/* サムネは1枚のスプライトを共有する（端末のメモリ対策）
+   Z で少し寄せて、背景の面積を減らす。縦は足元を残すため下寄りに取る。 */
+var Z=1.16, K=4*Z, FY=0.545;
+function bgPos(col,row){
+  var px = 100*((col+0.5)*K/4 - 0.5)/(K-1);
+  var py = 100*((row+FY )*K/4 - 0.5)/(K-1);
+  return px.toFixed(3)+'% '+py.toFixed(3)+'%';
+}
 function thumbStyle(c){
   var i=ORD.indexOf(c); if(i<0) return '';
-  var col=i%4, row=(i/4)|0;
-  return 'background-image:url('+SPRITE+');background-size:400% 400%;'+
-         'background-position:'+(col*100/3).toFixed(4)+'% '+(row*100/3).toFixed(4)+'%';
+  return 'background-image:url('+SPRITE+');background-size:'+(K*100).toFixed(1)+'% '+(K*100).toFixed(1)+'%;'+
+         'background-position:'+bgPos(i%4,(i/4)|0);
 }
 function ill(c,cls){
   var t=CT[c]; if(!t) return '';
