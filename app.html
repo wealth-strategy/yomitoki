@@ -156,18 +156,54 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .fig.xs{width:48px;border-radius:10px}
 
 /* --- 5段階 --- */
-.lik{display:flex;flex-direction:column;gap:7px;margin-top:4px}
-.lik button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--card);
-  border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14.5px;
-  color:var(--ink);cursor:pointer;line-height:1.5}
-.lik button:active{border-color:var(--brand);background:var(--brand-soft)}
-.lik .dot{flex:none;border-radius:50%;border:2px solid var(--line2);background:transparent}
-.lik .d1 .dot{width:22px;height:22px;border-color:var(--brand);background:var(--brand)}
-.lik .d2 .dot{width:19px;height:19px;border-color:var(--brand)}
-.lik .d3 .dot{width:15px;height:15px}
-.lik .d4 .dot{width:19px;height:19px;border-color:var(--data)}
-.lik .d5 .dot{width:22px;height:22px;border-color:var(--data);background:var(--data)}
-.lik .d3{color:var(--faint);font-size:13.5px}
+/* 横軸5段階 */
+.scale{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.scale .ends{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700}
+.scale .ends .l{color:var(--brand)}
+.scale .ends .r{color:var(--data)}
+.scale .dots{display:flex;align-items:stretch;justify-content:space-between;gap:4px}
+.scale .dots button{flex:1;background:none;border:0;padding:12px 0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;height:68px;font-family:inherit}
+.scale .dots i{display:block;border-radius:50%;border:2.5px solid var(--line2);background:transparent;
+  transition:transform .12s ease}
+.scale .dots button:active i{transform:scale(.88)}
+.scale .s1 i{width:44px;height:44px;border-color:var(--brand);background:var(--brand)}
+.scale .s2 i{width:35px;height:35px;border-color:var(--brand)}
+.scale .s3 i{width:26px;height:26px}
+.scale .s4 i{width:35px;height:35px;border-color:var(--data)}
+.scale .s5 i{width:44px;height:44px;border-color:var(--data);background:var(--data)}
+.scale .mid{text-align:center;font-size:11.5px;color:var(--faint);margin:-2px 0 0}
+
+/* 誰について答えるか */
+.vp{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:10px 13px;margin:0}
+.vp .tag{flex:none;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint)}
+.vp .who{flex:1;min-width:0;font-size:14px;font-weight:700;line-height:1.5}
+.vp.you{border-color:rgba(226,103,79,.42);background:var(--brand-soft)}
+.vp.you .who{color:var(--brand-d)}
+
+/* 対象を決める画面 */
+.whoin{display:flex;flex-direction:column;gap:9px}
+.whoin label{font-size:13px;color:var(--soft);font-weight:700}
+.whoin input{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 13px;font-family:inherit;font-size:16px;color:var(--ink);min-height:50px}
+.whoin input:focus{outline:2px solid var(--brand);outline-offset:1px}
+
+/* 結果：コンパクトな軸表示 */
+.axc{display:flex;flex-direction:column;gap:11px;min-width:0;width:100%}
+.axc .top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.axc .top .n{font-family:"Shippori Mincho B1",serif;font-size:21px;font-weight:800}
+.axc .top .p{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:600;color:var(--brand)}
+.axc .top .s{font-size:12px;color:var(--faint);width:100%}
+.axc .rows{display:flex;flex-direction:column;gap:7px}
+.axc .r{display:flex;align-items:center;gap:8px;font-size:12.5px;min-width:0}
+.axc .r .lb{flex:none;width:82px;color:var(--soft);font-weight:700;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.axc .r .tr{flex:1;min-width:0;height:7px;border-radius:7px;background:var(--sunk);overflow:hidden}
+.axc .r .f{height:100%;display:block;border-radius:7px}
+.axc .r .pc{flex:none;width:36px;text-align:right;font-family:"IBM Plex Mono",monospace;color:var(--faint)}
+.more{background:none;border:0;color:var(--brand);font:inherit;font-size:13.5px;font-weight:700;
+  padding:10px 0;cursor:pointer;text-decoration:underline;min-height:44px}
 .ctfix{background:var(--brand-soft);border:1px solid rgba(226,103,79,.3);border-radius:12px;padding:12px 14px;
   font-size:13px;line-height:1.75;color:var(--ink);margin:0}
 .ctfix b{color:var(--brand-d)}
@@ -213,7 +249,7 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .segs .seg.done{background:var(--brand)}
 .q-axis{font-size:11.5px;color:var(--faint);text-align:center;letter-spacing:.06em}
 .q-back{background:none;border:0;color:var(--faint);font:inherit;font-size:13px;cursor:pointer;padding:6px}
-.ctq{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:18px 16px calc(20px + var(--sab))}
+.ctq{flex:1;display:flex;flex-direction:column;justify-content:flex-start;gap:20px;padding:22px 16px calc(24px + var(--sab))}
 .ctq .qt{font-family:"Shippori Mincho B1",serif;font-size:clamp(19px,5.2vw,24px);font-weight:700;line-height:1.65;text-align:center;margin:0;text-wrap:balance;word-break:auto-phrase;overflow-wrap:break-word}
 .ctcard{background:linear-gradient(165deg,#2a2330,#17131d);border-radius:18px;padding:26px 20px;display:flex;flex-direction:column;
   align-items:center;gap:11px;text-align:center;color:#f4eff6;position:relative;overflow:hidden}
@@ -550,15 +586,33 @@ b{font-weight:700}
 </section>
 
 <!-- ========== CONTACT TYPE QUIZ ========== -->
+<section id="ctwho" class="sc">
+  <div class="bar"><button class="bk" onclick="go(CTFROM==='ptype'?'ptype':'setup')">←</button><span class="ti">はじめる前に</span></div>
+  <div class="pad">
+    <div class="ctbox">
+      <h5>誰を思い浮かべて答えますか</h5>
+      <p style="margin:0;font-size:13.5px;color:var(--soft);line-height:1.85">LINEの返し方は<b>相手によって変わります。</b>なので、<b>一人だけ決めて</b>から答えてください。<br>その人への返し方で、あなたのタイプが出ます。</p>
+      <div class="whoin">
+        <label>その人の呼び名<span style="color:var(--faint);font-weight:400">（任意・端末に保存されます）</span></label>
+        <input id="ctTarget" type="text" placeholder="例）ユウカ／先輩／気になってる人" maxlength="12">
+      </div>
+      <button class="btn" onclick="ctGo()">この人で診断をはじめる</button>
+      <p class="note" style="margin:0">恋人でも、気になっている人でも、まだ友達の人でもかまいません。<b>いちばん連絡を取りたい相手</b>を選ぶと、結果がいちばん役に立ちます。</p>
+    </div>
+  </div>
+</section>
+
 <section id="ct" class="sc">
   <div class="bar"><button class="bk" onclick="ctExit()">←</button><span class="ti">連絡タイプ診断</span><span class="rt" id="ctn">1 / 16</span></div>
   <div class="q-bar" style="border:0;padding-top:14px"><div class="segs" id="ctsegs"></div></div>
   <div class="ctq">
-    <div id="ctLead"></div>
-    <div class="q-axis" id="ctax"></div>
-    <p class="q-ctx" id="ctctx"></p>
+    <div id="ctVp"></div>
     <p class="qt mincho" id="ctq"></p>
-    <div class="lik" id="ctOpts"></div>
+    <div class="scale">
+      <div class="ends"><span class="l">あてはまる</span><span class="r">あてはまらない</span></div>
+      <div class="dots" id="ctOpts"></div>
+      <p class="mid">まんなかは「どちらとも言えない」</p>
+    </div>
     <button class="q-back" onclick="ctBack()">← ひとつ戻る</button>
   </div>
 </section>
@@ -577,12 +631,13 @@ b{font-weight:700}
       <div class="ax4" id="ctA4"></div>
     </div>
     <div class="ctbox">
-      <h5>4つの軸の濃さ</h5>
       <div id="ctAx"></div>
     </div>
-    <div id="ctMid"></div>
-    <div class="pc"><p id="ctD"></p></div>
     <div class="verd" id="ctLove"></div>
+    <div class="pc"><p id="ctD"></p></div>
+    <button class="more" id="ctMore" onclick="ctToggle()">4つの軸の意味を読む ＋</button>
+    <div id="ctDetail" style="display:none"></div>
+    <div id="ctMid"></div>
     <button class="btn" onclick="shareCT()">この結果をシェアする</button>
     <button class="btn g" id="ctNext" onclick="ctExit()">LINE履歴も読み解く →</button>
     <p class="note">友達や気になる相手にも送ってみてください。<b>相手のタイプが分かると、履歴の読み方が変わります。</b></p>
@@ -1119,28 +1174,34 @@ var CTLOVE={
 var CTAX=[['即レス','寝かせる'],['そのまま出す','ひねる'],['長文','短文・スタンプ'],['誰にでも同じ','相手で変える']];
 var CTK=[['Q','S'],['D','T'],['L','B'],['F','C']];
 var CTSC=['とても あてはまる','ややあてはまる','どちらとも言えない','あまり あてはまらない','まったく あてはまらない'];
+/* v = 視点。you=その人に対して / usual=ふだんの自分 / compare=人によって */
+var VP={
+ you    :{t:'この人に対して', c:'you'},
+ usual  :{t:'ふだんの自分（相手を問わず）', c:''},
+ compare:{t:'人によって、どう違うか', c:''}
+};
 var CTQ=[
- {a:0,d:1,c:'気になっている人から',t:'気づいた瞬間に返している'},
- {a:0,d:-1,c:'気になっている人から',t:'返す内容を考えて、半日くらい寝かせることがある'},
- {a:0,d:1,c:'手が離せないときでも',t:'「あとで」ではなく、今すぐ返したくなる'},
- {a:0,d:-1,c:'ふだんの自分は',t:'既読をつけてから返すまでに、1時間以上あく'},
+ {a:0,d: 1,v:'you',t:'気づいた瞬間に返している'},
+ {a:0,d:-1,v:'you',t:'返す内容を考えて、半日くらい寝かせることがある'},
+ {a:0,d: 1,v:'you',t:'手が離せないときでも、今すぐ返したくなる'},
+ {a:0,d:-1,v:'you',t:'既読をつけてから返すまでに、1時間以上あくことが多い'},
 
- {a:1,d:1,c:'うれしい内容が来たとき',t:'うれしさが、そのまま文面に出る'},
- {a:1,d:-1,c:'好きな人ほど',t:'わざと少し間を置いてから返している'},
- {a:1,d:-1,c:'本当は会いたいとき',t:'そう書けずに、遠回しな言い方になる'},
- {a:1,d:1,c:'相手の気持ちが気になったら',t:'待たずに、自分から聞いてしまう'},
+ {a:1,d: 1,v:'you',t:'うれしい内容が来たら、うれしさがそのまま文面に出る'},
+ {a:1,d:-1,v:'you',t:'わざと少し間を置いてから返すことがある'},
+ {a:1,d:-1,v:'you',t:'会いたいときでも、そう書けずに遠回しな言い方になる'},
+ {a:1,d: 1,v:'you',t:'気持ちが気になったら、待たずに自分から聞く'},
 
- {a:2,d:1,c:'ふだんの一通は',t:'思っていることを、まとめて書く'},
- {a:2,d:-1,c:'ふだんの返信は',t:'スタンプや短い一言で済ませることが多い'},
- {a:2,d:1,c:'気持ちを伝えるとき',t:'言葉で書かないと伝わらない気がする'},
- {a:2,d:-1,c:'送る直前に',t:'長いと感じて、文章を削ることがある'},
+ {a:2,d: 1,v:'usual',t:'一通に、思っていることをまとめて書く'},
+ {a:2,d:-1,v:'usual',t:'スタンプや短い一言で済ませることが多い'},
+ {a:2,d: 1,v:'usual',t:'気持ちは、言葉で書かないと伝わらない気がする'},
+ {a:2,d:-1,v:'usual',t:'送る直前に長いと感じて、文章を削ることがある'},
 
- {a:3,d:1,c:'仕事の相手と、気になる人で',t:'返信の速さは、ほとんど変わらない'},
- {a:3,d:-1,c:'苦手な人からのLINEは',t:'既読のまま置いてしまうことがある'},
- {a:3,d:-1,c:'相手によって',t:'文体や絵文字の量が、はっきり変わる'},
- {a:3,d:1,c:'誰に対しても',t:'だいたい同じ自分でLINEしている'}
+ {a:3,d: 1,v:'compare',t:'仕事の相手と、気になる人で、返信の速さはほとんど変わらない'},
+ {a:3,d:-1,v:'compare',t:'苦手な人からのLINEは、既読のまま置いてしまうことがある'},
+ {a:3,d:-1,v:'compare',t:'相手によって、文体や絵文字の量がはっきり変わる'},
+ {a:3,d: 1,v:'compare',t:'誰に対しても、だいたい同じ自分でLINEしている'}
 ];
-var cti=0, ctans=[], MYTYPE='', MYPCT=null, PTYPE='', CTFROM='setup';
+var cti=0, ctans=[], MYTYPE='', MYPCT=null, PTYPE='', CTFROM='setup', CTTGT='';
 
 function loadMy(){ try{ return localStorage.getItem('yomitoki:mytype')||''; }catch(e){ return ''; } }
 function saveMy(v){ try{ localStorage.setItem('yomitoki:mytype',v); }catch(e){} }
@@ -1149,29 +1210,37 @@ function showMyNow(){
   if(MYTYPE&&CT[MYTYPE]) setHt('myTypeNow','<div class="nobase" style="display:flex;align-items:center;gap:11px;text-align:left">'+ill(MYTYPE,'sm')+'<span style="flex:1">あなたは <b>'+CT[MYTYPE].n+'</b> と診断済みです。<br><button class="btn g" style="margin-top:8px" onclick="showCTRes()">結果をもう一度見る</button></span></div>');
   else setHt('myTypeNow','');
 }
+function loadTgt(){ try{ return localStorage.getItem('yomitoki:cttarget')||''; }catch(e){ return ''; } }
+function saveTgt(v){ try{ localStorage.setItem('yomitoki:cttarget',v); }catch(e){} }
 function startCT(from){
   CTFROM = from || (document.getElementById('ptype').classList.contains('on') ? 'ptype' : 'setup');
+  var el=document.getElementById('ctTarget'); if(el) el.value=loadTgt();
+  go('ctwho'); window.scrollTo(0,0);
+}
+function ctGo(){
+  var el=document.getElementById('ctTarget');
+  CTTGT=((el&&el.value)||'').trim(); saveTgt(CTTGT);
   cti=0; ctans=[];
   var sg=document.getElementById('ctsegs'); sg.innerHTML='';
   for(var k=0;k<CTQ.length;k++){ var d=document.createElement('span'); d.className='seg'; sg.appendChild(d); }
   go('ct'); ctRender();
 }
+function tgtName(){ return CTTGT || '気になっている人'; }
 function ctRender(){
-  var q=CTQ[cti];
-  setHt('ctLead', cti===0 ? '<p class="ctfix" style="margin-bottom:4px">いま<b>いちばん気になっている人を一人</b>思い浮かべて、その人に対しての自分で答えてください。相手によって変わるのは当たり前なので、<b>一人に固定する</b>ほうが正確に出ます。</p>' : '');
+  var q=CTQ[cti], vp=VP[q.v];
   var sgs=document.querySelectorAll('#ctsegs .seg');
   for(var k=0;k<sgs.length;k++) sgs[k].classList.toggle('done',k<cti);
   setTx('ctn',(cti+1)+' / '+CTQ.length);
-  setTx('ctax',CTAX[q.a][0]+' ／ '+CTAX[q.a][1]);
-  setTx('ctctx',q.c);
+  var who = q.v==='you' ? tgtName()+' に対して' : vp.t;
+  setHt('ctVp','<p class="vp '+vp.c+'"><span class="tag">だれに</span><span class="who">'+who+'</span></p>');
   setTx('ctq',q.t);
   var h='';
-  for(var v=0;v<5;v++) h+='<button class="d'+(v+1)+'" onclick="ctPick('+v+')"><span class="dot"></span><span>'+CTSC[v]+'</span></button>';
+  for(var v=0;v<5;v++) h+='<button class="s'+(v+1)+'" onclick="ctPick('+v+')" aria-label="'+CTSC[v]+'"><i></i></button>';
   setHt('ctOpts',h);
   window.scrollTo(0,0);
 }
 function ctPick(v){ ctans[cti]=v; cti++; if(cti<CTQ.length) ctRender(); else ctFinish(); }
-function ctBack(){ if(cti>0){ cti--; ctRender(); } else ctExit(); }
+function ctBack(){ if(cti>0){ cti--; ctRender(); } else go('ctwho'); }
 
 /* 各軸：-8〜+8 → pole0 寄りの濃度% */
 function ctCalc(ans){
@@ -1196,25 +1265,33 @@ function ctFinish(){
   var r=ctCalc(ctans);
   MYTYPE=r.code; MYPCT=r.pct; saveMy(r.code); savePct(r.pct); showMyNow(); showCTRes();
 }
-function strLabel(p){
-  var d=Math.abs(p-50);
-  if(d>=30) return 'はっきり';
-  if(d>=15) return 'ややつよめ';
-  if(d>=7)  return 'ゆるやか';
-  return 'どちらも半分ずつ';
+function axOne(k,p){
+  var zero=p>=50, name=zero?CTAX[k][0]:CTAX[k][1], pct=zero?p:100-p;
+  return {name:name,pct:pct,zero:zero};
 }
-function axBars(code,pct,dark){
-  var h='<div class="axb">';
+function axBars(code,pct){
+  var L=[];
+  for(var k=0;k<4;k++) L.push(axOne(k, pct? pct[k] : (code[k]===CTK[k][0]?72:28)));
+  var best=0; for(var k=1;k<4;k++) if(L[k].pct>L[best].pct) best=k;
+  var AXW=['返信の速さ','気持ちの出し方','文章の長さ','相手による差'];
+  var h='<div class="axc"><div class="top"><span class="n">'+L[best].name+'</span>'+
+        '<span class="p">'+L[best].pct+'%</span>'+
+        '<span class="s">いちばん濃いのは「'+AXW[best]+'」でした</span></div><div class="rows">';
   for(var k=0;k<4;k++){
+    if(k===best) continue;
     var p = pct? pct[k] : (code[k]===CTK[k][0]?72:28);
-    var zero = p>=50;
-    h+='<div class="row"><div class="lb"><span class="'+(zero?'on':'')+'">'+CTAX[k][0]+' '+p+'%</span>'+
-       '<span class="'+(zero?'':'on')+'">'+(100-p)+'% '+CTAX[k][1]+'</span></div>'+
-       '<div class="tr"><span class="fl" style="width:'+p+'%;background:var(--brand)"></span>'+
-       '<span class="fl" style="width:'+(100-p)+'%;background:var(--data)"></span></div>'+
-       '<div class="st">'+strLabel(p)+'</div></div>';
+    h+='<div class="r"><span class="lb">'+L[k].name+'</span>'+
+       '<span class="tr"><span class="f" style="width:'+L[k].pct+'%;background:'+(L[k].zero?'var(--brand)':'var(--data)')+'"></span></span>'+
+       '<span class="pc">'+L[k].pct+'%</span></div>';
   }
-  return h+'</div>';
+  return h+'</div></div>';
+}
+function ctToggle(){
+  var d=document.getElementById('ctDetail'), b=document.getElementById('ctMore');
+  if(!d||!b) return;
+  var open = d.style.display!=='none';
+  d.style.display = open?'none':'block';
+  b.textContent = open?'4つの軸の意味を読む ＋':'閉じる −';
 }
 function showCTRes(){
   var c=MYTYPE; if(!CT[c]) return;
@@ -1225,12 +1302,16 @@ function showCTRes(){
   var h='';
   for(var k=0;k<4;k++) h+='<span>'+(c[k]===CTK[k][0]?CTAX[k][0]:CTAX[k][1])+'</span>';
   setHt('ctA4',h);
-  setHt('ctD',CTD[c[0]]+'<br><br>'+CTD[c[1]]+'<br><br>'+CTD[c[2]]+'<br><br>'+CTD[c[3]]);
-  setHt('ctLove','<b>好きな人に対しては</b><br>'+CTLOVE[c[0]+c[1]]);
-  /* 半々の軸があれば伝える */
+  /* 最初に見せるのは2つだけ */
+  setHt('ctLove','<b>'+(CTTGT?CTTGT+' に対しては':'好きな人に対しては')+'</b><br>'+CTLOVE[c[0]+c[1]]);
+  setHt('ctD', CT[c].k+'。<br><br>'+CTD[c[1]]);
+  /* 残りは折りたたみ */
+  setHt('ctDetail','<div class="pc"><p>'+CTD[c[0]]+'<br><br>'+CTD[c[2]]+'<br><br>'+CTD[c[3]]+'</p></div>');
+  var d=document.getElementById('ctDetail'); if(d) d.style.display='none';
+  var b=document.getElementById('ctMore'); if(b) b.textContent='4つの軸の意味を読む ＋';
   var mid=[];
   if(MYPCT) for(var k=0;k<4;k++) if(Math.abs(MYPCT[k]-50)<7) mid.push(CTAX[k][0]+'／'+CTAX[k][1]);
-  setHt('ctMid', mid.length? '<p class="note" style="margin:0"><b>'+mid.join('、')+'</b> の軸は、ほぼ半分ずつでした。相手や状況で振れるということです。履歴を読み解くと、<b>この相手に対してはどちら側か</b>が出ます。</p>' : '');
+  setHt('ctMid', mid.length? '<p class="note" style="margin:0"><b>'+mid.join('、')+'</b> は、ほぼ半分ずつでした。相手や状況で振れるということです。</p>' : '');
   setTx('ctNext', CTFROM==='ptype' ? '分析の続きに戻る →' : 'LINE履歴も読み解く →');
   go('ctres');
 }
