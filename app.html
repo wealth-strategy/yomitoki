@@ -152,8 +152,13 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
   width:92px;aspect-ratio:271/362;box-shadow:0 3px 12px rgba(0,0,0,.18);animation:none;background:var(--sunk)}
 .fig img{width:100%;height:100%;display:block;object-fit:cover}
 .fig.big{width:min(230px,62vw);border-radius:20px;box-shadow:0 12px 34px rgba(0,0,0,.3)}
-.fig.sm{width:56px;border-radius:11px}
-.fig.xs{width:48px;border-radius:10px}
+/* 一覧は枠を消して背景を溶かす */
+.fig.sm,.fig.xs{border-radius:0;box-shadow:none;background:none;overflow:visible}
+.fig.sm img,.fig.xs img{
+  -webkit-mask-image:radial-gradient(ellipse 62% 70% at 50% 48%,#000 52%,transparent 88%);
+  mask-image:radial-gradient(ellipse 62% 70% at 50% 48%,#000 52%,transparent 88%)}
+.fig.sm{width:62px}
+.fig.xs{width:58px}
 
 /* --- 5段階 --- */
 /* 横軸5段階 */
@@ -247,11 +252,13 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .mq::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
 .mq::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
 .mq .track{display:flex;gap:8px;width:max-content;animation:mqs 46s linear infinite}
-.mq img{width:74px;aspect-ratio:271/362;object-fit:cover;border-radius:11px;display:block;
-  box-shadow:0 3px 10px rgba(0,0,0,.16)}
+.mq img{width:86px;aspect-ratio:271/362;object-fit:cover;display:block;
+  -webkit-mask-image:radial-gradient(ellipse 64% 72% at 50% 48%,#000 54%,transparent 88%);
+  mask-image:radial-gradient(ellipse 64% 72% at 50% 48%,#000 54%,transparent 88%)}
 @keyframes mqs{to{transform:translateX(-50%)}}
 @media (prefers-reduced-motion:reduce){.mq .track{animation:none}}
-.mqcap{text-align:center;font-size:11.5px;color:var(--faint);margin:0 0 2px}
+.mqcap{text-align:center;font-size:13.5px;color:var(--soft);margin:4px 0 2px;font-weight:700}
+.mqcap b{color:var(--brand)}
 
 /* 区切り */
 .sep{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;margin:22px 0 2px;
@@ -521,17 +528,17 @@ b{font-weight:700}
 <section id="setup" class="sc on">
   <div class="hero">
     <h1 class="logo">よみ<em>とき</em></h1>
-    <p class="tag">LINEのやり取りから、相手とあなたを読み解く</p>
+    <p class="tag">気になるあの人とのLINEを、読み解く</p>
     <div class="steps"><span>01 自分を知る</span><span>02 相手を読む</span><span>03 返信案</span></div>
   </div>
   <div class="pad">
 
     <div class="mq"><div class="track" id="mqTrack"></div></div>
-    <p class="mqcap">あなたはこの16人のうち、どれ？</p>
+    <p class="mqcap">気になるあの人と、あなたは<b>何タイプ</b>？</p>
 
     <div class="ctbox">
-      <h5>まずは ── 自分の連絡タイプを調べる</h5>
-      <p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">16問・2分。<b>履歴は要りません。</b>気になる人をひとり思い浮かべて答えると、4つの軸の濃さと<b>キャラクター</b>が出ます。<br>結果はそのままシェアできます。</p>
+      <h5>気になるあの人を思い浮かべて、16問</h5>
+      <p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8"><b>履歴は要りません。2分で終わります。</b><br>あの人へのLINEの返し方から、あなたが16タイプのどれかが出ます。結果はそのままシェアできます。</p>
       <button class="btn" onclick="startCT()">連絡タイプ診断をはじめる（無料）</button>
       <div id="myTypeNow"></div>
     </div>
@@ -590,22 +597,6 @@ b{font-weight:700}
 </section>
 
 <!-- ========== CONTACT TYPE QUIZ ========== -->
-<section id="ctwho" class="sc">
-  <div class="bar"><button class="bk" onclick="go(CTFROM==='ptype'?'ptype':'setup')">←</button><span class="ti">はじめる前に</span></div>
-  <div class="pad">
-    <div class="ctbox">
-      <h5>誰を思い浮かべて答えますか</h5>
-      <p style="margin:0;font-size:13.5px;color:var(--soft);line-height:1.85">LINEの返し方は<b>相手によって変わります。</b>なので、<b>一人だけ決めて</b>から答えてください。<br>その人への返し方で、あなたのタイプが出ます。</p>
-      <div class="whoin">
-        <label>その人の呼び名<span style="color:var(--faint);font-weight:400">（任意・端末に保存されます）</span></label>
-        <input id="ctTarget" type="text" placeholder="例）ユウカ／先輩／気になってる人" maxlength="12">
-      </div>
-      <button class="btn" onclick="ctGo()">この人で診断をはじめる</button>
-      <p class="note" style="margin:0">恋人でも、気になっている人でも、まだ友達の人でもかまいません。<b>いちばん連絡を取りたい相手</b>を選ぶと、結果がいちばん役に立ちます。</p>
-    </div>
-  </div>
-</section>
-
 <section id="ct" class="sc">
   <div class="bar"><button class="bk" onclick="ctExit()">←</button><span class="ti">連絡タイプ診断</span><span class="rt" id="ctn">1 / 16</span></div>
   <div class="q-bar" style="border:0;padding-top:14px"><div class="segs" id="ctsegs"></div></div>
@@ -1180,7 +1171,7 @@ var CTK=[['Q','S'],['D','T'],['L','B'],['F','C']];
 var CTSC=['とても あてはまる','ややあてはまる','どちらとも言えない','あまり あてはまらない','まったく あてはまらない'];
 /* v = 視点。you=その人に対して / usual=ふだんの自分 / compare=人によって */
 var VP={
- you    :{t:'この人に対して', c:'you'},
+ you    :{t:'気になるあの人 に対して', c:'you'},
  usual  :{t:'ふだんの自分（相手を問わず）', c:''},
  compare:{t:'人によって、どう違うか', c:''}
 };
@@ -1205,7 +1196,7 @@ var CTQ=[
  {a:3,d:-1,v:'compare',t:'相手によって、文体や絵文字の量がはっきり変わる'},
  {a:3,d: 1,v:'compare',t:'誰に対しても、だいたい同じ自分でLINEしている'}
 ];
-var cti=0, ctans=[], MYTYPE='', MYPCT=null, PTYPE='', CTFROM='setup', CTTGT='';
+var cti=0, ctans=[], MYTYPE='', MYPCT=null, PTYPE='', CTFROM='setup';
 
 function loadMy(){ try{ return localStorage.getItem('yomitoki:mytype')||''; }catch(e){ return ''; } }
 function saveMy(v){ try{ localStorage.setItem('yomitoki:mytype',v); }catch(e){} }
@@ -1214,22 +1205,14 @@ function showMyNow(){
   if(MYTYPE&&CT[MYTYPE]) setHt('myTypeNow','<div class="nobase" style="display:flex;align-items:center;gap:11px;text-align:left">'+ill(MYTYPE,'sm')+'<span style="flex:1">あなたは <b>'+CT[MYTYPE].n+'</b> と診断済みです。<br><button class="btn g" style="margin-top:8px" onclick="showCTRes()">結果をもう一度見る</button></span></div>');
   else setHt('myTypeNow','');
 }
-function loadTgt(){ try{ return localStorage.getItem('yomitoki:cttarget')||''; }catch(e){ return ''; } }
-function saveTgt(v){ try{ localStorage.setItem('yomitoki:cttarget',v); }catch(e){} }
 function startCT(from){
   CTFROM = from || (document.getElementById('ptype').classList.contains('on') ? 'ptype' : 'setup');
-  var el=document.getElementById('ctTarget'); if(el) el.value=loadTgt();
-  go('ctwho'); window.scrollTo(0,0);
-}
-function ctGo(){
-  var el=document.getElementById('ctTarget');
-  CTTGT=((el&&el.value)||'').trim(); saveTgt(CTTGT);
   cti=0; ctans=[];
   var sg=document.getElementById('ctsegs'); sg.innerHTML='';
   for(var k=0;k<CTQ.length;k++){ var d=document.createElement('span'); d.className='seg'; sg.appendChild(d); }
   go('ct'); ctRender();
 }
-function tgtName(){ return CTTGT || '気になっている人'; }
+function tgtName(){ return '気になるあの人'; }
 function ctRender(){
   var q=CTQ[cti], vp=VP[q.v];
   var sgs=document.querySelectorAll('#ctsegs .seg');
@@ -1244,7 +1227,7 @@ function ctRender(){
   window.scrollTo(0,0);
 }
 function ctPick(v){ ctans[cti]=v; cti++; if(cti<CTQ.length) ctRender(); else ctFinish(); }
-function ctBack(){ if(cti>0){ cti--; ctRender(); } else go('ctwho'); }
+function ctBack(){ if(cti>0){ cti--; ctRender(); } else ctExit(); }
 
 /* 各軸：-8〜+8 → pole0 寄りの濃度% */
 function ctCalc(ans){
@@ -1307,7 +1290,7 @@ function showCTRes(){
   for(var k=0;k<4;k++) h+='<span>'+(c[k]===CTK[k][0]?CTAX[k][0]:CTAX[k][1])+'</span>';
   setHt('ctA4',h);
   /* 最初に見せるのは2つだけ */
-  setHt('ctLove','<b>'+(CTTGT?CTTGT+' に対しては':'好きな人に対しては')+'</b><br>'+CTLOVE[c[0]+c[1]]);
+  setHt('ctLove','<b>気になるあの人に対しては</b><br>'+CTLOVE[c[0]+c[1]]);
   setHt('ctD', CT[c].k+'。<br><br>'+CTD[c[1]]);
   /* 残りは折りたたみ */
   setHt('ctDetail','<div class="pc"><p>'+CTD[c[0]]+'<br><br>'+CTD[c[2]]+'<br><br>'+CTD[c[3]]+'</p></div>');
