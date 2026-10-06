@@ -45,7 +45,11 @@ body{font-family:"Zen Kaku Gothic New","Hiragino Sans",system-ui,sans-serif;font
 .sc.on{display:flex;animation:f .35s ease both}
 .sc>*{min-width:0;max-width:100%}
 @keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  /* 飾りのスライドだけは、ゆっくりで残す */
+  .mq .track{animation:mqs 90s linear infinite!important}
+}
 
 /* bar */
 .bar{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1px solid var(--line);
@@ -253,6 +257,7 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
   -webkit-mask-composite:source-in;
   mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.35) 4%,#000 13%,#000 86%,rgba(0,0,0,.35) 96%,transparent 100%),linear-gradient(to right,transparent 0%,rgba(0,0,0,.4) 4%,#000 14%,#000 86%,rgba(0,0,0,.4) 96%,transparent 100%);
   mask-composite:intersect}
+@keyframes mqs{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .mqcap{text-align:center;font-size:14.5px;color:var(--ink);margin:2px 0 6px;font-weight:700}
 .mqcap b{color:var(--brand)}
 
