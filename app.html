@@ -131,7 +131,7 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .evform input:focus{outline:2px solid var(--brand);outline-offset:1px}
 
 /* summary */
-.summ{background:linear-gradient(168deg,var(--card),#201828);border:1px solid var(--line2);border-radius:18px;
+.summ{background:linear-gradient(168deg,var(--card),var(--brand-soft));border:1px solid var(--line2);border-radius:18px;
   padding:20px 19px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--sh)}
 .summ .st{display:flex;align-items:center;gap:12px}
 .summ .sn{font-family:"Shippori Mincho B1",serif;font-size:26px;font-weight:800;letter-spacing:.04em;line-height:1.2}
@@ -206,7 +206,7 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
   overflow:hidden;text-overflow:ellipsis}
 .axc .r .tr{flex:1;min-width:0;height:7px;border-radius:7px;background:var(--sunk);overflow:hidden}
 .axc .r .f{height:100%;display:block;border-radius:7px}
-.axc .r .pc{flex:none;width:36px;text-align:right;font-family:"IBM Plex Mono",monospace;color:var(--faint)}
+.axc .r .pv{flex:none;width:36px;text-align:right;font-family:"IBM Plex Mono",monospace;color:var(--faint)}
 .more{background:none;border:0;color:var(--brand);font:inherit;font-size:13.5px;font-weight:700;
   padding:10px 0;cursor:pointer;text-decoration:underline;min-height:44px}
 .ctfix{background:var(--brand-soft);border:1px solid rgba(226,103,79,.3);border-radius:12px;padding:12px 14px;
@@ -379,6 +379,13 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 /* result */
 .sect{display:flex;flex-direction:column;gap:11px}
 .sect>h3{margin:0;font-size:12px;letter-spacing:.14em;color:var(--brand);font-family:"IBM Plex Mono",monospace;font-weight:600}
+.fold{border-top:1px solid var(--line)}
+.fold>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:13px 2px;gap:10px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary h3{margin:0;font-size:12px;letter-spacing:.14em;color:var(--brand);font-family:"IBM Plex Mono",monospace;font-weight:600}
+.fold>summary::after{content:"＋";color:var(--faint);font-size:15px;flex:none}
+.fold[open]>summary::after{content:"−"}
+.fold>.sect{padding:0 0 16px}
 .pc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh)}
 .pc-top{display:flex;align-items:center;gap:13px}
 .av{width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:24px;background:var(--brand-soft)}
@@ -576,14 +583,14 @@ b{font-weight:700}
     </div>
 
     <textarea id="paste" placeholder="ここを長押しして、ペースト"></textarea>
+    <p class="ftiny" style="margin:0">🔒 貼り付けた履歴は外部に送信されません（解析は端末の中だけ）</p>
     <button class="btn" id="go">読み解く</button>
+    <div id="err"></div>
 
     <p class="ftiny">コピーがうまくいかないときは <button onclick="document.getElementById('file').click()">履歴ファイルを選ぶ</button>
       <input id="file" type="file" accept=".txt,text/plain" style="display:none"></p>
 
     <button class="btn g" id="demo">サンプルで試す（30秒）</button>
-
-    <div id="err"></div>
 
     <div class="future">
       <h4>本番では、ファイルを選びません</h4>
@@ -596,7 +603,7 @@ b{font-weight:700}
     </div>
 
     <div class="priv">
-      <b>🔒 データはこの端末から出ません。</b>解析はすべてブラウザ内で行われ、本文がサーバーに送られることはありません。画面を閉じると消えます。
+      <b>🔒 履歴の本文は外部に送信しません。</b>解析はすべてこのブラウザの中で行います。スコアやメモなど分析の記録は<b>この端末の中にだけ</b>保存され、結果画面の「この相手の記録を消す」でいつでも消せます。
     </div>
     <p class="note">※ これは触って確かめるための試作です。返信案は型に沿った雛形で、本番ではあなたの文体を学習して生成します。</p>
   </div>
@@ -640,7 +647,7 @@ b{font-weight:700}
     <div id="ctDetail" style="display:none"></div>
     <div id="ctMid"></div>
     <button class="btn" onclick="shareCT()">この結果をシェアする</button>
-    <button class="btn g" id="ctNext" onclick="ctExit()">LINE履歴も読み解く →</button>
+    <button class="btn g" id="ctNext" onclick="ctNextGo()">LINE履歴も読み解く →</button>
     <p class="note">友達や気になる相手にも送ってみてください。<b>相手のタイプが分かると、履歴の読み方が変わります。</b></p>
   </div>
 </section>
@@ -654,10 +661,10 @@ b{font-weight:700}
       <p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">同じ「返信138分」でも、<b>相手が元々そういう人かどうか</b>で意味が正反対になります。<br>相手に診断を送って、結果を聞いてみてください。</p>
       <button class="btn g" onclick="copyInvite(this)">診断のリンクと誘い文をコピー</button>
     </div>
+    <button class="btn" onclick="setPT('')">分からない・聞いていない（スキップ）</button>
     <div id="myPick"></div>
-    <p class="note" style="margin:0">相手のタイプを選ぶ</p>
+    <p class="note" style="margin:0">相手のタイプが分かるなら選ぶ（あなたの印象で選んでもOK）</p>
     <div class="tgrid" id="ptGrid"></div>
-    <button class="btn g" onclick="setPT('')">分からない・聞いていない（スキップ）</button>
   </div>
 </section>
 
@@ -699,15 +706,20 @@ b{font-weight:700}
   <div class="pad">
 
     <div class="summ" id="summBox"></div>
+    <div class="today" id="todayBox"></div>
+    <button class="btn" onclick="toReplyFree()">この相手への返信をつくる</button>
+    <p class="note" style="margin:0">↓ 数字と根拠は、タップすると開きます</p>
 
-    <div class="sect">
-      <h3>00 — この人について</h3>
+    <details class="fold">
+      <summary><h3>00 — この人について</h3></summary>
+      <div class="sect">
       <div class="memo" id="memoBox"></div>
-      <div class="memo" id="evBox" style="margin-top:9px"></div>
-    </div>
+      <div class="memo" id="evBox" style="margin-top:9px"></div></div>
+    </details>
 
-    <div class="sect">
-      <h3>01 — 相手はこういう人</h3>
+    <details class="fold">
+      <summary><h3>01 — 相手はこういう人</h3></summary>
+      <div class="sect">
       <div class="pc">
         <div class="pc-top">
           <span class="av" id="yAv">🌙</span>
@@ -715,16 +727,18 @@ b{font-weight:700}
         </div>
         <div class="axs" id="yAx"></div>
         <p id="yDesc">—</p>
-      </div>
-    </div>
+      </div></div>
+    </details>
 
-    <div class="sect">
-      <h3>02 — 相手の数字</h3>
-      <div class="facts" id="yFacts"></div>
-    </div>
+    <details class="fold">
+      <summary><h3>02 — 相手の数字</h3></summary>
+      <div class="sect">
+      <div class="facts" id="yFacts"></div></div>
+    </details>
 
-    <div class="sect">
-      <h3>03 — あなたはこういう人</h3>
+    <details class="fold">
+      <summary><h3>03 — あなたはこういう人</h3></summary>
+      <div class="sect">
       <div class="pc">
         <div class="pc-top">
           <span class="av" id="mAv">🌙</span>
@@ -733,29 +747,32 @@ b{font-weight:700}
         <div class="axs" id="mAx"></div>
         <p id="mDesc">—</p>
       </div>
-      <div class="facts" id="mFacts"></div>
-    </div>
+      <div class="facts" id="mFacts"></div></div>
+    </details>
 
-    <div class="sect">
-      <h3>04 — 二人のリズム</h3>
+    <details class="fold">
+      <summary><h3>04 — 二人のリズム</h3></summary>
+      <div class="sect">
       <div class="cmp" id="cmpBox"></div>
-      <div class="verd" id="verd"></div>
-    </div>
+      <div class="verd" id="verd"></div></div>
+    </details>
 
-    <div class="sect">
-      <h3>05 — 噛み合いスコア</h3>
+    <details class="fold">
+      <summary><h3>05 — 噛み合いスコア</h3></summary>
+      <div class="sect">
       <div class="bigsc" style="padding:2px 0 8px"><span class="n" id="rScore">—</span><span class="l">／ 100　やり取りの実測から</span></div>
-      <div class="sbrk" id="scoreBrk"></div>
-    </div>
+      <div class="sbrk" id="scoreBrk"></div></div>
+    </details>
 
-    <div class="sect">
-      <h3>06 — いま読み取れること</h3>
+    <details class="fold">
+      <summary><h3>06 — いま読み取れること</h3></summary>
+      <div class="sect">
       <p class="note" style="margin:0">確率は出しません。<b>データから言えることだけ</b>を3つに分けています。</p>
       <div id="baseBox"></div>
       <div id="sigPos"></div>
       <div id="sigNeg"></div>
-      <div id="sigUnk"></div>
-    </div>
+      <div id="sigUnk"></div></div>
+    </details>
 
     <div class="sect">
       <h3>07 — ここから先</h3>
@@ -765,12 +782,11 @@ b{font-weight:700}
         </div>
         <div class="ov"><span class="ic">🔒</span><span class="t">詳しい読み解きと、返信案</span></div>
       </div>
-      <div class="today" id="todayBox"></div>
-      <button class="btn" onclick="toReplyFree()">この相手への返信をつくる</button>
       <button class="btn g" onclick="toDetail()">もっと詳しく読み解く</button>
       <button class="btn g" onclick="buildPT();renderMyPick();go('ptype')">相手のタイプを変える</button>
       <button class="btn g" onclick="go('goal')">目的を変える</button>
       <button class="btn g" onclick="location.reload()">別の相手を読み解く</button>
+      <button class="btn g" id="forgetBtn" onclick="forgetPartner(this)">この相手の記録を消す</button>
     </div>
 
   </div>
@@ -1394,7 +1410,7 @@ function axBars(code,pct){
     var p = pct? pct[k] : (code[k]===CTK[k][0]?72:28);
     h+='<div class="r"><span class="lb">'+L[k].name+'</span>'+
        '<span class="tr"><span class="f" style="width:'+L[k].pct+'%;background:'+(L[k].zero?'var(--brand)':'var(--data)')+'"></span></span>'+
-       '<span class="pc">'+L[k].pct+'%</span></div>';
+       '<span class="pv">'+L[k].pct+'%</span></div>';
   }
   return h+'</div></div>';
 }
@@ -1431,6 +1447,11 @@ function ctExit(){
   if(CTFROM==='ptype'){ buildPT(); renderMyPick(); go('ptype'); }
   else { showMyNow(); go('setup'); }
 }
+function ctNextGo(){
+  if(CTFROM==='ptype'){ ctExit(); return; }
+  showMyNow(); go('setup');
+  var e=document.getElementById('paste'); if(e) e.scrollIntoView({block:'center'});
+}
 function shareCT(){
   var c=CT[MYTYPE];
   var txt='私の連絡タイプは【'+c.n+'】'+c.e+'\n「'+c.t+'」\n'+c.k+'\n\nあなたは何タイプ？\n#よみとき #連絡タイプ診断';
@@ -1441,7 +1462,7 @@ function shareCT(){
   alert('結果をコピーしました');
 }
 function copyInvite(btn){
-  var t='連絡タイプ診断やってみて！12問・90秒で終わる\nあなたが何タイプか教えてほしい\n\n' + location.href;
+  var t='連絡タイプ診断やってみて！16問・2分くらいで終わる\nあなたが何タイプか教えてほしい\n\n' + location.href;
   var ta=document.createElement('textarea'); ta.value=t;
   ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px';
   document.body.appendChild(ta); ta.select();
@@ -1457,7 +1478,7 @@ function renderMyPick(){
       '<button class="btn g" style="margin-top:8px" onclick="openMySel()">自分のタイプを変更する</button></div>');
   } else {
     setHt('myPick','<div class="nobase"><b>自分の連絡タイプも入れておくと、</b>「普段の自分」とのズレが出せます。<br>'+
-      '<button class="btn g" style="margin-top:8px" onclick="startCT(\'ptype\')">診断を受ける（12問）</button>'+
+      '<button class="btn g" style="margin-top:8px" onclick="startCT(\'ptype\')">診断を受ける（16問）</button>'+
       '<button class="btn g" style="margin-top:7px" onclick="openMySel()">診断せず、自分で選ぶ</button></div>');
   }
 }
@@ -1531,7 +1552,7 @@ function renderBase(tgt){
   } else if(PTYPE&&!MYTYPE){
     h+='<div class="nobase" style="margin-top:9px"><b>自分の連絡タイプも入れると、二人の組み合わせが読めます。</b><br>'+
        '「速さの基準が逆」「二人ともひねるタイプ」など、すれ違いの原因がはっきりします。'+
-       '<button class="btn g" style="margin-top:9px" onclick="startCT(\'ptype\')">自分も診断する（12問）</button></div>';
+       '<button class="btn g" style="margin-top:9px" onclick="startCT(\'ptype\')">自分も診断する（16問）</button></div>';
   }
   setHt(tgt,h);
 }
@@ -1540,8 +1561,11 @@ function renderBase(tgt){
 
 
 /* ============ 出来事の記録 ============ */
-function evKey(){ return 'yomitoki:ev:'+(YOU||''); }
-function loadEv(){ try{ var v=localStorage.getItem(evKey()); return v?JSON.parse(v):[]; }catch(e){ return []; } }
+/* 端末に残す記録のキーには名前を使わない（ハッシュ化） */
+function hk(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h<<5)+h+t.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+function evKey(){ return 'yomitoki:e:'+hk('ev|'+(YOU||'')); }
+function migrate(oldK,newK){ try{ var v=localStorage.getItem(oldK); if(v!=null){ if(localStorage.getItem(newK)==null) localStorage.setItem(newK,v); localStorage.removeItem(oldK); } }catch(e){} }
+function loadEv(){ migrate('yomitoki:ev:'+(YOU||''),evKey()); try{ var v=localStorage.getItem(evKey()); return v?JSON.parse(v):[]; }catch(e){ return []; } }
 function saveEv(a){ try{ localStorage.setItem(evKey(),JSON.stringify(a)); }catch(e){} }
 function addEv(){
   var dEl=document.getElementById('evDate'), tEl=document.getElementById('evText');
@@ -1769,8 +1793,9 @@ function renderSignals(){
 }
 
 /* ============ RELATIONSHIP MEMORY ============ */
-function memKey(){ return 'yomitoki:'+(YOU||'')+':'+(ME||''); }
+function memKey(){ return 'yomitoki:m:'+hk('mem|'+(YOU||'')+'|'+(ME||'')); }
 function loadMem(){
+  migrate('yomitoki:'+(YOU||'')+':'+(ME||''),memKey());
   try{ var v=localStorage.getItem(memKey()); return v?JSON.parse(v):null; }catch(e){ return null; }
 }
 function saveMem(obj){
@@ -1787,7 +1812,7 @@ function renderMemo(){
      '<div class="mcell"><span class="k">最後のやり取り</span><span class="v">'+(last.getMonth()+1)+'/'+last.getDate()+'</span></div>'+
      '<div class="mcell"><span class="k">噛み合いスコア</span><span class="v">'+sc.total+'</span></div>'+
      '</div>';
-  if(prev && prev.score!=null){
+  if(prev && prev.score!=null && prev.total!==R.total){
     var diff=sc.total-prev.score;
     h+='<div class="mprev">前回（'+prev.date+'）の分析を覚えています。'+
        (diff===0?'スコアに変化はありません。':'スコアは <b>'+prev.score+' → '+sc.total+'</b>（'+(diff>0?'+':'')+diff+'）。')+
@@ -1802,6 +1827,12 @@ function renderMemo(){
   var mt=document.getElementById('memoText');
   if(mt && prev && prev.note) mt.value=prev.note;
   saveMem({score:sc.total,total:R.total,date:(new Date()).getMonth()+1+'/'+(new Date()).getDate(),note:(prev&&prev.note)||''});
+}
+function forgetPartner(btn){
+  if(btn.dataset.armed!=='1'){ btn.dataset.armed='1'; btn.textContent='もう一度押すと、この相手の記録（スコア・メモ・出来事）を消します'; return; }
+  try{ localStorage.removeItem(memKey()); localStorage.removeItem(evKey()); }catch(e){}
+  btn.dataset.armed=''; btn.textContent='この相手の記録を消しました';
+  setHt('memoBox','<div class="mprev">この相手の記録を消しました。</div>'); renderEv();
 }
 function saveNote(){
   var mt=document.getElementById('memoText'); if(!mt) return;
@@ -2653,6 +2684,14 @@ document.getElementById('demo').onclick=function(){ start(SAMPLE); };
   mq.innerHTML='<div class="track">'+h+'</div><div class="track" aria-hidden="true">'+h+'</div>';
 })();
 showMyNow();
+/* 以前の版で名前入りのキーに保存した記録を、ハッシュのキーへ移す */
+(function(){ try{
+  var ks=[]; for(var i=0;i<localStorage.length;i++) ks.push(localStorage.key(i));
+  ks.forEach(function(k){ var m;
+    if((m=k.match(/^yomitoki:ev:(.+)$/))) migrate(k,'yomitoki:e:'+hk('ev|'+m[1]));
+    else if(!/^yomitoki:(mytype|mypct|replies|paid|m:|e:)/.test(k) && (m=k.match(/^yomitoki:([^:]+):([^:]+)$/))) migrate(k,'yomitoki:m:'+hk('mem|'+m[1]+'|'+m[2]));
+  });
+}catch(e){} })();
 (function(){
   function rd(f){ var r=new FileReader(); r.onload=function(e){ start(e.target.result); }; r.readAsText(f,'UTF-8'); }
   document.addEventListener('dragover',function(e){e.preventDefault();});
