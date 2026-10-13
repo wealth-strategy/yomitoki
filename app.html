@@ -915,15 +915,31 @@ function go(id){
 }
 
 /* ============ PARSER ============ */
+/* 日付行は「行全体が日付（＋曜日）だけ」のときだけ。本文中の日付で区切らない */
+var DATE_RE=/^\s*(\d{4})[\/\.\-年](\d{1,2})[\/\.\-月](\d{1,2})日?\s*(?:[\(（][月火水木金土日][\)）]|[月火水木金土日]曜日?)?\s*$/;
+var CALL_RE=/^(☎\s*|📞\s*)?(通話時間|不在着信|通話をキャンセル|キャンセル|応答なし|グループ通話)/;
+var PARSE_INFO={noTime:false};
+function cleanMsg(m){
+  var x=m.x;
+  /* 複数行メッセージは "…" で囲まれて書き出される */
+  if(x.length>=2 && x.charAt(0)==='"' && x.charAt(x.length-1)==='"' && x.indexOf('\n')>=0) x=x.slice(1,-1).replace(/""/g,'"');
+  m.x=x;
+  if(/^☎|^📞/.test(x) || (CALL_RE.test(x.trim()) && x.length<30)){
+    m.call=true;
+    var d=x.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    m.sec = /通話時間/.test(x)&&d ? (d[3]!=null ? (+d[1])*3600+(+d[2])*60+(+d[3]) : (+d[1])*60+(+d[2])) : 0;
+  }
+  return m;
+}
 function parseLINE(text){
-  var lines=text.replace(/\r/g,'').split('\n');
+  var lines=text.replace(/\r/g,'').replace(/^﻿/,'').split('\n');
   var msgs=[],cur=null,last=null;
-  var dateRe=/^(\d{4})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})/;
   var timeRe=/^(午前|午後)?\s*(\d{1,2}):(\d{2})\t([^\t]*)\t([\s\S]*)$/;
+  PARSE_INFO.noTime=false;
   for(var i=0;i<lines.length;i++){
-    var ln=lines[i].replace(/\u00a0/g,' ');
-    var dm=ln.match(dateRe);
-    if(dm && ln.length<40){ cur={y:+dm[1],m:+dm[2],d:+dm[3]}; last=null; continue; }
+    var ln=lines[i].replace(/ /g,' ');
+    var dm=ln.match(DATE_RE);
+    if(dm){ cur={y:+dm[1],m:+dm[2],d:+dm[3]}; last=null; continue; }
     var tm=ln.match(timeRe);
     if(tm && cur){
       var h=+tm[2];
@@ -932,6 +948,36 @@ function parseLINE(text){
       last={t:new Date(cur.y,cur.m-1,cur.d,h,+tm[3]),who:(tm[4]||'').trim(),x:tm[5]};
       if(last.who) msgs.push(last); else last=null;
     } else if(last && ln.trim()!==''){ last.x+='\n'+ln; }
+  }
+  if(msgs.length<10) msgs=parseLoose(lines);
+  return msgs.map(cleanMsg);
+}
+/* 長押しコピーなど、公式の書き出し以外の形
+   「HH:MM 名前 本文」「[HH:MM] 名前: 本文」「名前: 本文」 */
+function parseLoose(lines){
+  var msgs=[],cur=null,last=null,n=0;
+  var reTime=/^\[?(午前|午後)?\s*(\d{1,2}):(\d{2})\]?\s+([^\s:：][^:：\t\s]{0,19})\s*[:：]?\s+(.+)$/;
+  var reName=/^([^\s:：\[\]][^:：\t]{0,19}?)\s*[:：]\s*(.+)$/;
+  var base=new Date(); base.setHours(0,0,0,0); base=new Date(base.getTime()-30*86400000);
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i].replace(/ /g,' ');
+    if(!ln.trim()) continue;
+    var dm=ln.match(DATE_RE);
+    if(dm){ cur={y:+dm[1],m:+dm[2],d:+dm[3]}; last=null; continue; }
+    var tm=ln.match(reTime);
+    if(tm){
+      var h=+tm[2]; if(tm[1]==='午後'&&h<12)h+=12; if(tm[1]==='午前'&&h===12)h=0;
+      var d0=cur?new Date(cur.y,cur.m-1,cur.d):base;
+      last={t:new Date(d0.getFullYear(),d0.getMonth(),d0.getDate(),h,+tm[3]),who:tm[4].trim(),x:tm[5]};
+      msgs.push(last); continue;
+    }
+    var nm=ln.match(reName);
+    if(nm && !/^(https?|保存日時)$/.test(nm[1])){
+      PARSE_INFO.noTime=true;
+      last={t:new Date(base.getTime()+(n++)*60000),who:nm[1].trim(),x:nm[2]};
+      msgs.push(last); continue;
+    }
+    if(last) last.x+='\n'+ln;
   }
   return msgs;
 }
@@ -942,6 +988,40 @@ function med(a){ if(!a.length) return 0; var b=a.slice().sort(function(x,y){retu
 var EMO=/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u;
 var ACT=/(行|会|食べ|飲|予約|店|時間|明日|今日|来週|空いて|都合|待ち合わせ|送る|迎え)/;
 var FEE=/(好き|嬉し|楽し|寂し|不安|ありがと|ごめん|気持ち|思っ|感じ|幸せ|心配|会いた)/;
+/* 質問：？に加えて「〜ですか。」「〜かな」「どう？」などの終わり方 */
+var QRE=/[?？]|(ですか|ますか|でしょうか|ませんか|かな|かね|か)[ぁあ〜ーw笑]*[。．!！]*\s*$|どう(だった|かな|ですか|でした)?[。．〜ー]*\s*$/m;
+var NOTQ=/(そっか|そうか|まじか|マジか|なるほどか|そうですか|ですかね)[。．!！〜ー]*\s*$/;
+function isQ(x){ return !!x && QRE.test(x) && !(NOTQ.test(x) && !/[?？]/.test(x)); }
+/* 会話の起点：同じ人が6時間以上あけて送った／相手の「締めの一言」（おやすみ・スタンプ・了解など）から18時間以上あけて送った。
+   相手の普通の発言に遅れて返したものは「遅れた返信」で、起点には数えない */
+var CLOSE_RE=/(おやすみ|またね|じゃあね|ありがと|了解|りょ|おつかれ|お疲れ|はーい|おけ|OK|ok|オッケ|よろしく)/;
+function isClosing(x){
+  if(!x) return true;
+  if(/^\[(スタンプ|写真|画像|動画|ボイスメッセージ)\]/.test(x)) return true;
+  if(isQ(x)) return false;
+  return x.length<=8 || CLOSE_RE.test(x);
+}
+function isStart(p,c,dm){
+  if(c.who===p.who) return dm>=360;
+  return dm>=1080 && isClosing(p.x);
+}
+/* しきい値は1か所に：起点の偏り・文量・速さ */
+var ISH_HI=.65, ISH_LO=.35;
+function iniSide(ish){ return ish>=ISH_HI?'me':(ish<=ISH_LO?'you':'even'); }
+function lenSide(me,you){ if(!me||!you) return ''; var r=you/me; return r<0.7?'youShort':(r>1.4?'youLong':'even'); }
+/* 速さの比較は「自分の中央値は最低5分」として計算する */
+function spdCmp(S){
+  if(!S.you.gap||!S.me.gap) return null;
+  var r=Math.max(5,S.you.gap)/Math.max(5,S.me.gap);
+  return {r:r, side: r<0.67?'faster':(r>1.5?'slower':'even')};
+}
+function xTimes(r){
+  if(r<1) r=1/r;
+  if(r<2) return Math.round((r-1)*100)+'%';
+  if(r<10) return '約'+Math.round(r)+'倍';
+  return '10倍以上';
+}
+function fmtMin(v){ if(!v) return '—'; if(v<60) return Math.round(v)+'分'; if(v<1440) return (v/60).toFixed(1)+'時間'; return (v/1440).toFixed(1)+'日'; }
 
 function analyze(msgs,me,you){
   function st(list){
@@ -955,7 +1035,7 @@ function analyze(msgs,me,you){
       sticker:list.filter(function(m){return /^\[スタンプ\]/.test(m.x)}).length,
       photo:list.filter(function(m){return /^\[(写真|画像|動画)\]/.test(m.x)}).length,
       emoji:txts.filter(function(m){return EMO.test(m.x)}).length,
-      q:txts.filter(function(m){return /[?？]/.test(m.x)}).length,
+      q:txts.filter(function(m){return isQ(m.x)}).length,
       act:txts.filter(function(m){return ACT.test(m.x)}).length,
       fee:txts.filter(function(m){return FEE.test(m.x)}).length,
       night:list.filter(function(m){var h=m.t.getHours();return h>=23||h<5}).length
@@ -966,23 +1046,30 @@ function analyze(msgs,me,you){
   var S={me:st(mine),you:st(your)};
 
   // reply gaps + initiations + bursts
-  var gapMe=[],gapYou=[],iniMe=0,iniYou=0,bMe=[],bYou=[],run=1;
+  /* 返信の間隔は72時間まで。それを超えた返信・問いかけのまま終わったものは「未返信」として数える */
+  var gapMe=[],gapYou=[],iniMe=0,iniYou=0,bMe=[],bYou=[],run=1,noRepMe=0,noRepYou=0,runs=msgs.length?1:0;
   for(var i=1;i<msgs.length;i++){
     var p=msgs[i-1],c=msgs[i];
     var dm=(c.t-p.t)/60000;
     if(c.who!==p.who){
-      if(dm<=720){ (c.who===me?gapMe:gapYou).push(dm); }
-      (p.who===me?bMe:bYou).push(run); run=1;
-    } else { run++; }
-    if(dm>=360){ if(c.who===me) iniMe++; else iniYou++; }
+      if(dm<=4320){ (c.who===me?gapMe:gapYou).push(dm); }
+      else { if(c.who===me) noRepMe++; else noRepYou++; }
+      (p.who===me?bMe:bYou).push(run); run=1; runs++;
+    } else {
+      run++;
+      if(dm>=360 && isQ(p.x)){ if(p.who===me) noRepYou++; else noRepMe++; }
+    }
+    if(isStart(p,c,dm)){ if(c.who===me) iniMe++; else iniYou++; }
   }
   (msgs.length?(msgs[msgs.length-1].who===me?bMe:bYou):bMe).push(run);
   if(msgs.length) { if(msgs[0].who===me) iniMe++; else iniYou++; }
+  if(PARSE_INFO.noTime){ gapMe=[]; gapYou=[]; }
 
   var days=msgs.length?Math.max(1,Math.round((msgs[msgs.length-1].t-msgs[0].t)/86400000)):1;
   var R={
-    days:days, total:msgs.length,
+    days:days, total:msgs.length, runs:runs,
     gapMe:med(gapMe), gapYou:med(gapYou),
+    noRepMe:noRepMe, noRepYou:noRepYou,
     iniMe:iniMe, iniYou:iniYou,
     burstMe:bMe.length?bMe.reduce(function(a,b){return a+b},0)/bMe.length:1,
     burstYou:bYou.length?bYou.reduce(function(a,b){return a+b},0)/bYou.length:1
@@ -1382,27 +1469,27 @@ function renderBase(tgt){
   // 速さ
   if(S.you.gap&&S.me.gap){
     var g=S.you.gap, slowBase=(P[0]==='S');
-    var isSlow = g>S.me.gap*1.5, isFast = g<S.me.gap*0.8;
+    var spB=spdCmp(S), isSlow = spB.side==='slower', isFast = spB.side==='faster';
     var cls,txt;
-    if(slowBase && isSlow){ cls='fl'; txt='このタイプは<b>もともと返信が遅い</b>人です。あなたへの遅さは、ほぼこの人の標準。<b>気にする必要はありません。</b>'; }
-    else if(slowBase && isFast){ cls='ok'; txt='このタイプは普段<b>返信が遅い</b>はずなのに、あなたには速い。<b>これは珍しい状態です。</b>'; }
+    if(slowBase && isSlow){ cls='fl'; txt='このタイプは<b>もともと返信が遅い</b>傾向があります。あなたへの遅さも、この人の標準の範囲<b>かもしれません</b>。'; }
+    else if(slowBase && isFast){ cls='ok'; txt='このタイプは普段<b>返信が遅い</b>傾向なのに、あなたには速い。<b>前向きに読める材料のひとつ</b>です。'; }
     else if(!slowBase && isSlow){ cls='ng'; txt='このタイプは<b>本来すぐ返す</b>人です。あなたへの遅さには<b>意味がある可能性</b>があります。'; }
     else { cls='ok'; txt='このタイプの標準どおりの速さです。特に読み取るべき差はありません。'; }
-    items.push(['返信の速さ',Math.round(g)+'分（ふだんの速さ）',cls,txt]);
+    items.push(['返信の速さ',fmtMin(g)+'（ふだんの速さ）',cls,txt]);
   }
   // 温度（ひねり）
   if(P[1]==='T'){
     items.push(['感情の出し方','ひねるタイプ','fl','この人は<b>好きな相手ほど、わざと一拍置いたり素っ気なくなったりします。</b>'+
-      (S.you.gap>S.me.gap*1.5?'いまの遅さを、そのまま脈なしと読まないこと。':'')+
-      '表面の冷たさと中身が一致しないタイプです。']);
+      (spdCmp(S)&&spdCmp(S).side==='slower'?'いまの遅さが好意の裏返し<b>の可能性もあります</b>が、下の実測の兆候とあわせて判断してください。':'')+
+      '表面と中身が一致しないことがあるタイプです。']);
   } else {
-    items.push(['感情の出し方','そのまま出すタイプ','ok','この人は<b>気持ちが速さと量に素直に出ます。</b>だからいまの数字は、ほぼそのままの意味だと考えて大丈夫です。']);
+    items.push(['感情の出し方','そのまま出すタイプ','ok','この人は<b>気持ちが速さと量に素直に出る</b>タイプです。いまの数字は、比較的そのままの意味で読めます。']);
   }
   // 量
   if(S.you.avgLen){
     var shortBase=(P[2]==='B');
     var isShort=S.me.avgLen && S.you.avgLen<S.me.avgLen*0.6;
-    if(shortBase) items.push(['文の長さ',Math.round(S.you.avgLen)+'字','fl','この人は<b>もともと短く送る</b>タイプ。短さは素っ気なさではありません。<b>あなたも短く返すほうが合います。</b>']);
+    if(shortBase) items.push(['文の長さ',Math.round(S.you.avgLen)+'字','fl','この人は<b>もともと短く送る</b>タイプ。短さだけで素っ気ないとは言えません。<b>あなたも短めに返すほうが合いやすい。</b>']);
     else if(isShort) items.push(['文の長さ',Math.round(S.you.avgLen)+'字','ng','この人は<b>本来しっかり書く</b>タイプです。あなたへの文が短いのは、標準とは違う状態です。']);
     else items.push(['文の長さ',Math.round(S.you.avgLen)+'字','ok','このタイプの標準どおりです。']);
   }
@@ -1410,7 +1497,8 @@ function renderBase(tgt){
   if(P[3]==='C') items.push(['相手による差','相手で変えるタイプ','fl','この人は<b>相手によって別人になります。</b>他の人への接し方と比べても意味がありません。<b>見るのは、あなたへの対応だけでいい。</b>']);
   else items.push(['相手による差','誰にでも同じタイプ','ok','この人は<b>誰に対してもだいたい同じ</b>です。つまり<b>あなたへの対応＝この人の素</b>。読み取りやすい相手です。']);
 
-  var h='<div class="base"><h5>相手（'+CT[P].e+' '+CT[P].n+'）の「ふだん」と比べると</h5>';
+  var h='<div class="base"><h5>相手（'+CT[P].e+' '+CT[P].n+'）の「ふだん」と比べると</h5>'+
+    '<p class="note" style="margin:0 0 6px">相手のタイプは、本人が診断した結果でなければ<b>あなたの見立て</b>です。ここは参考程度に。</p>';
   for(var i=0;i<items.length;i++){
     h+='<div class="bitem"><div class="bt"><span class="bk">'+items[i][0]+'</span><span class="bv '+items[i][2]+'">'+items[i][1]+'</span></div>'+
        '<div class="bn">'+items[i][3]+'</div></div>';
@@ -1449,7 +1537,7 @@ function statsAround(ts){
     var gaps=[],len=[];
     for(var i=1;i<list.length;i++){
       var dm=(list[i].t-list[i-1].t)/60000;
-      if(list[i].who===YOU && list[i-1].who!==YOU && dm<=720) gaps.push(dm);
+      if(list[i].who===YOU && list[i-1].who!==YOU && dm<=4320) gaps.push(dm);
     }
     for(var j=0;j<list.length;j++) if(list[j].who===YOU && !/^\[/.test(list[j].x)) len.push(list[j].x.length);
     return {gap:med(gaps), len:len.length?len.reduce(function(a,b){return a+b},0)/len.length:0, n:list.length};
@@ -1508,14 +1596,15 @@ function relState(){
     if(hy.a.gap&&hy.b.gap){ if(hy.b.gap<hy.a.gap*0.8) trend=1; else if(hy.b.gap>hy.a.gap*1.4) trend=-1; }
     if(hy.b.len && hy.a.len){ if(hy.b.len<hy.a.len*0.6) trend-=1; else if(hy.b.len>hy.a.len*1.4) trend+=1; }
   }
+  var sp=spdCmp(S);
   if(trend<=-2) return {n:'冷却期',e:'🧊',d:'前より反応が落ちています。いま追うと、さらに離れます'};
-  if(ish>=.72) return {n:'片道LINE',e:'➡️',d:'会話のほとんどをあなたが始めています'};
+  if(ish>=.72) return {n:'あなた発信が中心',e:'📤',d:'いまは、会話の多くをあなたから始めています'};
   if(ish<=.25 && yq>=.12 && sc.total>=70) return {n:'追い風',e:'🪁',d:'いまは、相手のほうから来ています'};
-  if(S.you.gap&&S.me.gap&&(S.you.gap>S.me.gap*2.5||S.me.gap>S.you.gap*2.5)) return {n:'温度差',e:'🌡',d:'二人のテンポが大きくずれています'};
-  if(S.you.avgLen&&S.me.avgLen&&(S.me.avgLen>S.you.avgLen*2)) return {n:'一人語り',e:'📣',d:'あなたの言葉の量が、相手を大きく上回っています'};
+  if(sp && (sp.r>2.5||sp.r<0.4)) return {n:'テンポのずれ',e:'⏱',d:'二人の返信のテンポが大きくずれています'};
+  if(S.you.avgLen&&S.me.avgLen&&(S.me.avgLen>S.you.avgLen*2)) return {n:'あなたが多めに話す',e:'📣',d:'あなたの言葉の量が、相手を大きく上回っています'};
   if(trend>=2) return {n:'反転のきざし',e:'🌅',d:'前より相手の反応が良くなっています。いまは進めていい時期'};
-  if(ish<=.3 && yq>=.1) return {n:'追い風',e:'🪁',d:'いまは、相手のほうから来ています'};
-  if(sc.total>=78 && ish>=.35 && ish<=.65) return {n:'ラリー成立',e:'🏓',d:'お互いが同じくらい投げ合えています'};
+  if(ish<=ISH_LO && yq>=.1) return {n:'追い風',e:'🪁',d:'いまは、相手のほうから来ています'};
+  if(sc.total>=78 && iniSide(ish)==='even') return {n:'ラリー成立',e:'🏓',d:'お互いが同じくらい投げ合えています'};
   if(yq<=.05 && S.you.text>10) return {n:'受け身どまり',e:'🪑',d:'返事はくれますが、相手から広げてはきません'};
   if(R.total<24) return {n:'様子見',e:'🔍',d:'まだやり取りが少なく、傾向と言い切れません'};
   return {n:'安定',e:'⚖️',d:'大きな偏りはありません'};
@@ -1525,12 +1614,14 @@ function todayAction(){
   var S=A.S,R=A.R;
   var ish=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
   var st=relState();
+  var couple=(GOAL.id==='dating');
+  if(couple && (st.n==='冷却期'||st.n==='あなた発信が中心')) return ['<b>連投せず、1通にまとめて「話せる時間」をひとつ提案する。</b>','付き合っている相手に「送らない」は逆効果になりやすい。責める言葉は入れず、会う・電話する予定を1つだけ置く。'];
   if(st.n==='冷却期') return ['<b>今日は送らない。</b>','反応が落ちている時期に連絡を足すと、ほぼ悪化します。3日あけて、相手から来るかを見る。来たらそこから組み直せます。'];
-  if(st.n==='片道LINE') return ['<b>今日は、こちらから送らない。</b>','いま会話の'+Math.round(ish*100)+'%をあなたが始めています。一度止めると、相手の本当の温度が分かります。'];
-  if(st.n==='一人語り') return ['<b>次の1通を、半分の長さにする。</b>','あなたは'+Math.round(S.me.avgLen)+'字、相手は'+Math.round(S.you.avgLen)+'字。長さの差は、そのまま温度差に見えます。'];
-  if(st.n==='温度差'){
-    if(S.you.gap>S.me.gap) return ['<b>返信を、少し寝かせてから送る。</b>','相手は'+Math.round(S.you.gap)+'分、あなたは'+Math.round(S.me.gap)+'分。速度を近づけるだけで、相手の負担が減ります。'];
-    return ['<b>今日のうちに、一度返しておく。</b>','相手は'+Math.round(S.you.gap)+'分で返しています。短くていいので、間を空けすぎないこと。'];
+  if(st.n==='あなた発信が中心') return ['<b>今日は、こちらから送らない。</b>','いま会話の'+Math.round(ish*100)+'%をあなたが始めています。一度止めると、相手の本当の温度が分かります。'];
+  if(st.n==='あなたが多めに話す') return ['<b>次の1通を、半分の長さにする。</b>','あなたは'+Math.round(S.me.avgLen)+'字、相手は'+Math.round(S.you.avgLen)+'字。長さの差は、そのまま温度差に見えます。'];
+  if(st.n==='テンポのずれ'){
+    if(S.you.gap>S.me.gap) return ['<b>返信を、少し寝かせてから送る。</b>','相手は'+fmtMin(S.you.gap)+'、あなたは'+fmtMin(S.me.gap)+'。速度を近づけるだけで、相手の負担が減ります。'];
+    return ['<b>今日のうちに、一度返しておく。</b>','相手は'+fmtMin(S.you.gap)+'で返しています。短くていいので、間を空けすぎないこと。'];
   }
   if(st.n==='受け身どまり') return ['<b>次の1通に、質問をひとつ足す。</b>','相手から質問が返ってきていません。答えやすい質問をひとつ置くと、会話が続きます。'];
   if(st.n==='追い風') return ['<b>受け取り方を丁寧にする。</b>','会話は相手から来ています。いま必要なのは押すことではなく、<b>返し方の質</b>です。質問にはひとつ多めに答えると、相手はもっと話します。'];
@@ -1552,8 +1643,8 @@ function renderSummary(){
     '<span><span class="sn">'+st.n+'</span></span>'+
     '<span class="sc2"><b>'+sc.total+'</b><span>／100</span></span></div>'+
     '<div class="sline">'+st.d+'</div>'+
-    '<div class="srow2"><span class="mk g">効いている</span><span>'+best[0]+'</span></div>'+
-    '<div class="srow2"><span class="mk b">いちばんの課題</span><span>'+worst[0]+'</span></div>');
+    (best&&best[1]>=.6?'<div class="srow2"><span class="mk g">効いている</span><span>'+best[0]+'</span></div>':'<div class="srow2"><span class="mk g">効いている</span><span>まだ目立った強みは出ていません</span></div>')+
+    (worst&&worst[1]<.6?'<div class="srow2"><span class="mk b">いちばんの課題</span><span>'+worst[0]+'</span></div>':''));
   var ta=todayAction();
   setHt('todayBox','<h4>今日やること、ひとつだけ</h4><p>'+ta[0]+'</p><p style="font-size:13.5px;color:var(--soft)">'+ta[1]+'</p>');
 }
@@ -1574,8 +1665,11 @@ function pairNotes(){
   } else if(m[1]==='T') ns.push(['二人ともひねる','<b>これは危険な組み合わせです。</b>どちらも本心を出さないので、両方が「相手は興味がない」と誤解したまま終わります。どちらかが降りる必要があります。']);
   else ns.push(['二人とも素直','<b>言葉どおりに受け取って問題ない</b>組み合わせです。誤解が起きにくい。']);
   // 量
-  if(m[2]!==y[2]){
-    if(m[2]==='L') ns.push(['文量が逆','あなたは長文、相手は短文。<b>あなたの長さは相手には負担です。</b>相手の短さを冷たさと取らないこと。']);
+  var ml=A&&A.S.me.avgLen;
+  if(m[2]==='L' && ml && ml<15) ns.push(['文量（実測を優先）','診断では長文タイプですが、<b>この相手には平均'+Math.round(ml)+'字と短く送っています</b>。この相手に対しては、いまの短さが基準です。']);
+  else if(m[2]==='B' && ml && ml>=30) ns.push(['文量（実測を優先）','診断では短文タイプですが、<b>この相手には平均'+Math.round(ml)+'字としっかり書いています</b>。この相手に対しては、いまの長さが基準です。']);
+  else if(m[2]!==y[2]){
+    if(m[2]==='L') ns.push(['文量が逆','あなたは長文、相手は短文。<b>あなたの長さは相手には負担になりやすい。</b>相手の短さを冷たさと取らないこと。']);
     else ns.push(['文量が逆','あなたは短文、相手は長文。<b>相手はもっと会話したがっています。</b>一行足すだけで印象が変わります。']);
   }
   // 相手差
@@ -1594,16 +1688,20 @@ function renderSignals(){
   var nightY=S.you.total?S.you.night/S.you.total:0;
 
   // 速さ
-  if(S.you.gap&&S.me.gap){
-    var rr=S.you.gap/S.me.gap;
-    if(rr<0.8) pos.push(['相手の返信が、あなたより速い','相手 '+Math.round(S.you.gap)+'分 / あなた '+Math.round(S.me.gap)+'分（ふだんの速さ）']);
-    else if(rr>2 && S.you.gap>=45) neg.push(['相手の返信が、あなたよりかなり遅い','相手 '+Math.round(S.you.gap)+'分 / あなた '+Math.round(S.me.gap)+'分（ふだんの速さ）']);
-    else pos.push(['返信の速さが釣り合っている','相手 '+Math.round(S.you.gap)+'分 / あなた '+Math.round(S.me.gap)+'分']);
-  } else unk.push(['返信の速さが測れていない','やり取りの往復が足りません']);
+  var sp=spdCmp(S);
+  if(sp){
+    var sv='相手 '+fmtMin(S.you.gap)+' / あなた '+fmtMin(S.me.gap)+'（ふだんの速さ）';
+    if(sp.side==='faster') pos.push(['相手の返信が、あなたより速い',sv]);
+    else if(sp.side==='slower' && S.you.gap>=45) neg.push(['相手の返信が、あなたより遅い（'+xTimes(sp.r)+'）',sv]);
+    else if(sp.side==='slower') unk.push(['相手の返信はあなたより遅いが、どちらも速い範囲',sv]);
+    else pos.push(['返信の速さが釣り合っている',sv]);
+  } else unk.push(['返信の速さが測れていない',PARSE_INFO.noTime?'貼り付けた内容に時刻が入っていません':'やり取りの往復が足りません']);
+  if(R.noRepYou>=2) neg.push(['返事が返ってこなかったことがある','あなたの問いかけ・メッセージに3日以上返事がなかった、または流れた回数 '+R.noRepYou+'回']);
+  if(S.me.burst>=2.5 && S.you.burst<1.8) neg.push(['あなたの連投が多い','あなたは1回に平均 '+S.me.burst.toFixed(1)+'通 / 相手 '+S.you.burst.toFixed(1)+'通']);
 
   // 起点
-  if(ish<=.4) pos.push(['相手から会話を始めることが多い','相手 '+R.iniYou+'回 / あなた '+R.iniMe+'回']);
-  else if(ish>=.65) neg.push(['会話を始めるのがあなたに偏っている','あなた '+Math.round(ish*100)+'% / 相手 '+Math.round((1-ish)*100)+'%']);
+  if(iniSide(ish)==='you') pos.push(['相手から会話を始めることが多い','相手 '+R.iniYou+'回 / あなた '+R.iniMe+'回']);
+  else if(iniSide(ish)==='me') neg.push(['会話を始めるのがあなたに偏っている','あなた '+Math.round(ish*100)+'% / 相手 '+Math.round((1-ish)*100)+'%']);
   else pos.push(['会話の起点がほぼ対等','あなた '+R.iniMe+'回 / 相手 '+R.iniYou+'回']);
 
   // 質問
@@ -1613,8 +1711,16 @@ function renderSignals(){
 
   // 文量
   if(S.you.avgLen&&S.me.avgLen){
-    if(S.you.avgLen>=S.me.avgLen*0.9) pos.push(['相手も同じくらいの量を書いている','相手 '+Math.round(S.you.avgLen)+'字 / あなた '+Math.round(S.me.avgLen)+'字']);
-    else if(S.you.avgLen<S.me.avgLen*0.55) neg.push(['相手の文があなたよりかなり短い','相手 '+Math.round(S.you.avgLen)+'字 / あなた '+Math.round(S.me.avgLen)+'字']);
+    var ls=lenSide(S.me.avgLen,S.you.avgLen), lv='相手 '+Math.round(S.you.avgLen)+'字 / あなた '+Math.round(S.me.avgLen)+'字';
+    if(ls==='even') pos.push(['相手も同じくらいの量を書いている',lv]);
+    else if(ls==='youLong') pos.push(['相手のほうが長く書いている',lv]);
+    else if(S.you.avgLen<S.me.avgLen*0.55) neg.push(['相手の文があなたよりかなり短い',lv]);
+    else unk.push(['相手の文はあなたより短め',lv]);
+  }
+  // 通話
+  if(CALLS.length){
+    var done=CALLS.filter(function(m){return m.sec>0}), sec=done.reduce(function(a,m){return a+m.sec},0);
+    (done.length?pos:unk).push([done.length?'通話もしている':'通話はつながっていない','通話 '+done.length+'回・合計 '+Math.round(sec/60)+'分'+(CALLS.length>done.length?'（不在・キャンセル '+(CALLS.length-done.length)+'回）':'')+'。通話の記録は文字の分析からは外しています']);
   }
 
   // 深夜
@@ -1690,9 +1796,9 @@ function saveNote(){
 
 /* ============ 実測4タイプ（断定できるのはここまで） ============ */
 var F4={
- QL:{n:'全部出す人', t:'速く返して、たっぷり書く'},
+ QL:{n:'すぐ・たっぷり返す人', t:'速く返して、たっぷり書く'},
  QB:{n:'テンポで返す人', t:'すぐ返すが、短く刻む'},
- SL:{n:'溜めて出す人', t:'すぐには返さないが、返すときはまとめて'},
+ SL:{n:'溜めて返す人', t:'すぐには返さないが、返すときはまとめて'},
  SB:{n:'静かに返す人', t:'遅くて短い。文面から読み取りにくい'}
 };
 var F4D={
@@ -1721,18 +1827,19 @@ function scoreReal(){
   var e3=S.you.gap? Math.max(0,Math.min(1,(360-S.you.gap)/330))*10 : 4;
   var eng=Math.round(e1+e2+e3);
   rows.push(['相手からの働きかけ',eng,35,
-    '話しかけてくる割合 '+Math.round(relYou*100)+'%／質問 '+Math.round(yq*100)+'%／返信 '+(S.you.gap?Math.round(S.you.gap)+'分':'—'),
+    '話しかけてくる割合 '+Math.round(relYou*100)+'%／質問 '+Math.round(yq*100)+'%／返信 '+fmtMin(S.you.gap),
     eng>=24?'相手の側から関わってきています':(eng>=14?'関わりはありますが、やや受け身です':'いまは相手からの動きが少なめ。こちらの出方を変える余地があります')]);
   // テンポの一致（20）
-  var t1=ratio(S.me.gap,S.you.gap)*10, t2=ratio(S.me.avgLen,S.you.avgLen)*10;
+  var t1=(S.me.gap&&S.you.gap?ratio(Math.max(5,S.me.gap),Math.max(5,S.you.gap)):0.5)*10, t2=ratio(S.me.avgLen,S.you.avgLen)*10;
   var tmp=Math.round(t1+t2);
   rows.push(['テンポの一致',tmp,20,
-    '返信 '+(S.me.gap?Math.round(S.me.gap):'—')+'分 / '+(S.you.gap?Math.round(S.you.gap):'—')+'分　文量 '+Math.round(S.me.avgLen)+'字 / '+Math.round(S.you.avgLen)+'字',
+    '返信 '+fmtMin(S.me.gap)+' / '+fmtMin(S.you.gap)+'　文量 '+Math.round(S.me.avgLen)+'字 / '+Math.round(S.you.avgLen)+'字',
     tmp>=14?'速さも長さも近く、無理のないやり取りです':(tmp>=7?'どちらかがやや合わせている状態です':'速さか長さが大きく離れています')]);
   // 会話の継続（15）
-  var av=MSGS.length/Math.max(1,sessions(MSGS));
-  var con=Math.round(Math.max(0,Math.min(1,(av-2)/2))*15);
-  rows.push(['会話の続き方',con,15,'1回のやり取りで平均 '+av.toFixed(1)+'通',
+  /* 連投で水増しされないよう、通数ではなく「話者が入れ替わった回数」で数える */
+  var av=R.runs/Math.max(1,sessions(MSGS));
+  var con=Math.round(Math.max(0,Math.min(1,(av-1.5)/3))*15);
+  rows.push(['会話の続き方',con,15,'会話が途切れる（6時間以上あく）までに、平均 '+av.toFixed(1)+'回の受け答え',
     con>=12?'一度始まると会話が続いています':(con>=6?'続くこともあれば、一往復で終わることもあります':'会話は一往復で終わりがち。質問をひとつ足すだけで変わります')]);
   // こちらの負担（10）
   var relMe=R.iniMe/Math.max(1,R.iniYou+R.iniMe);
@@ -1745,9 +1852,9 @@ function scoreReal(){
 }
 
 /* ============ RENDER ============ */
-var MSGS=[],NAMES=[],ME='',YOU='',A=null,MT='',YT='';
+var MSGS=[],CALLS=[],NAMES=[],ME='',YOU='',A=null,MT='',YT='';
 
-function mins(v){ if(!v) return '—'; if(v<60) return Math.round(v)+'<small>分</small>'; return (v/60).toFixed(1)+'<small>時間</small>'; }
+function mins(v){ if(!v) return '—'; if(v<60) return Math.round(v)+'<small>分</small>'; if(v<1440) return (v/60).toFixed(1)+'<small>時間</small>'; return (v/1440).toFixed(1)+'<small>日</small>'; }
 function pct(v){ return Math.round(v*100)+'<small>%</small>'; }
 
 function renderAx(el,code){
@@ -1769,9 +1876,9 @@ function youDesc(){
   var S=A.S,R=A.R,p=[];
   var relYou=R.iniYou/Math.max(1,R.iniYou+R.iniMe);
   var yq=S.you.text?S.you.q/S.you.text:0;
-  p.push('ふだんの返信は<b>'+(S.you.gap? (S.you.gap<60?Math.round(S.you.gap)+'分':(S.you.gap/60).toFixed(1)+'時間') :'—')+'</b>、1通は<b>'+Math.round(S.you.avgLen)+'字</b>。');
-  if(relYou>=.6) p.push('会話は<b>相手から始まることが多い</b>（'+Math.round(relYou*100)+'%）。');
-  else if(relYou<=.3) p.push('会話は<b>ほとんどあなたから</b>始まっています（相手 '+Math.round(relYou*100)+'%）。');
+  p.push('ふだんの返信は<b>'+fmtMin(S.you.gap)+'</b>、1通は<b>'+Math.round(S.you.avgLen)+'字</b>。');
+  if(relYou>=1-ISH_LO) p.push('会話は<b>相手から始まることが多い</b>（'+Math.round(relYou*100)+'%）。');
+  else if(relYou<=1-ISH_HI) p.push('会話は<b>ほとんどあなたから</b>始まっています（相手 '+Math.round(relYou*100)+'%）。');
   else p.push('会話の起点はほぼ半々です。');
   if(yq>=.12) p.push('<b>質問を返してくる</b>ほうです（'+Math.round(yq*100)+'%）。');
   else if(S.you.text>10&&yq<=.05) p.push('<b>質問はあまり返ってきません</b>（'+Math.round(yq*100)+'%）。');
@@ -1833,14 +1940,14 @@ function render(){
   var sc=scoreReal();
   var vp=[];
   var ish=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
-  if(S.you.gap && S.me.gap){
-    var rv=S.you.gap/S.me.gap;
-    if(rv<0.75) vp.push('相手の返信は<b>あなたより'+(1/rv>=2?(1/rv).toFixed(1)+'倍':'')+'速い</b>。');
-    else if(rv>1.5) vp.push('相手の返信は<b>あなたより'+(rv>=2?rv.toFixed(1)+'倍':'')+'遅い</b>。');
+  var sp=spdCmp(S);
+  if(sp){
+    if(sp.side==='faster') vp.push('相手の返信は<b>あなたより速い（'+xTimes(sp.r)+'）</b>。');
+    else if(sp.side==='slower') vp.push('相手の返信は<b>あなたより遅い（'+xTimes(sp.r)+'）</b>。');
     else vp.push('返信の速さは<b>ほぼ釣り合っています</b>。');
   }
-  if(ish>=.68) vp.push('会話を始めるのは<b>あなたばかり（'+Math.round(ish*100)+'%）</b>。');
-  else if(ish<=.32) vp.push('会話は<b>相手から始まることが多い</b>。');
+  if(iniSide(ish)==='me') vp.push('会話を始めるのは<b>あなたからが多い（'+Math.round(ish*100)+'%）</b>。');
+  else if(iniSide(ish)==='you') vp.push('会話は<b>相手から始まることが多い</b>。');
   else vp.push('会話の起点は<b>ほぼ半々</b>。');
   setHt('verd',vp.join('<br>'));
   setHt('scoreBrk', sc.rows.map(function(r){
@@ -2023,30 +2130,31 @@ function buildDoDont(){
   var S=A.S,R=A.R,dos=[],ng=[];
   var relMe=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
   // 実測から
-  if(S.you.avgLen && S.me.avgLen>S.you.avgLen*1.4){
+  if(lenSide(S.me.avgLen,S.you.avgLen)==='youShort'){
     dos.push('<b>文の長さを、相手に寄せてみる。</b>相手は'+Math.round(S.you.avgLen)+'字、あなたは'+Math.round(S.me.avgLen)+'字');
     ng.push('長文で送る。<b>読む負担がそのまま返信の遅さになります</b>');
-  } else if(S.you.avgLen>S.me.avgLen*1.4){
+  } else if(lenSide(S.me.avgLen,S.you.avgLen)==='youLong'){
     dos.push('<b>もう少しだけ書いてみる。</b>相手のほうが'+Math.round(S.you.avgLen)+'字と長く、あなたの短さが素っ気なく映ります');
   } else dos.push('<b>いまの長さのままでいい。</b>二人の文量は近く、無理のないやり取りです');
-  if(S.you.gap && S.me.gap && S.you.gap>S.me.gap*2 && S.you.gap>=45){
-    dos.push('<b>返す前に、少し置いてみる。</b>相手'+Math.round(S.you.gap)+'分に対し、あなたは'+Math.round(S.me.gap)+'分');
+  var sp3=spdCmp(S);
+  if(sp3 && sp3.r>2 && S.you.gap>=45){
+    dos.push('<b>返す前に、少し置いてみる。</b>相手'+fmtMin(S.you.gap)+'に対し、あなたは'+fmtMin(S.me.gap));
     ng.push('すぐ返す・追撃する。<b>速度差は温度差に見えます</b>');
-  } else if(S.me.gap && S.you.gap && S.me.gap>S.you.gap*2 && S.me.gap>=60){
-    dos.push('<b>もう少し早く返してみる。</b>相手は'+Math.round(S.you.gap)+'分で返しているのに、あなたは'+Math.round(S.me.gap)+'分かかっています');
+  } else if(sp3 && sp3.r<0.5 && S.me.gap>=60){
+    dos.push('<b>もう少し早く返してみる。</b>相手は'+fmtMin(S.you.gap)+'で返しているのに、あなたは'+fmtMin(S.me.gap)+'かかっています');
   }
-  if(relMe>=.65){ dos.push('<b>一度こちらから止めて、相手の出方を見てみる</b>'); ng.push('会話を始め続ける。いまあなたが<b>'+Math.round(relMe*100)+'%</b>を担っています'); }
-  else if(relMe<=.3) dos.push('<b>たまにはこちらからも振ってみる。</b>いまは相手任せになっています');
+  if(iniSide(relMe)==='me'){ dos.push('<b>一度こちらから止めて、相手の出方を見てみる</b>'); ng.push('会話を始め続ける。いまあなたが<b>'+Math.round(relMe*100)+'%</b>を担っています'); }
+  else if(iniSide(relMe)==='you') dos.push('<b>たまにはこちらからも振ってみる。</b>いまは相手任せになっています');
   if(S.you.text && S.you.q/S.you.text<=.05) ng.push('質問を重ねる。<b>相手は質問を返さないタイプ</b>なので、尋問になりやすい');
   if(S.you.total && S.you.sticker/S.you.total>=.12) dos.push('<b>スタンプで締めてみる。</b>相手がよく使う返し方に合います');
   if(S.you.burst>=2) dos.push('<b>こちらも小分けに送ってみる。</b>相手は一度に'+S.you.burst.toFixed(1)+'通に分けて送ってきます');
   else if(S.me.burst>=2) ng.push('連投する。<b>相手は1通にまとめる</b>タイプです');
   // 相手の連絡タイプが分かっていれば足す
   if(PTYPE&&CT[PTYPE]){
-    if(PTYPE[1]==='T'){ dos.push('<b>素っ気なさを額面どおりに受け取らない。</b>この人は好意があるほどひねるタイプです'); ng.push('遅さや短さを<b>そのまま脈なしと読む</b>'); }
-    else dos.push('<b>言葉どおりに受け取っていい。</b>この人は気持ちがそのまま出るタイプです');
+    if(PTYPE[1]==='T'){ dos.push('<b>素っ気なさだけで判断しない。</b>このタイプは好意があってもひねることがあります'); ng.push('一通の遅さや短さで<b>結論を出す</b>'); }
+    else dos.push('<b>言葉どおりに受け取りやすい相手。</b>気持ちがそのまま出るタイプです');
     if(PTYPE[3]==='C') ng.push('他の人への接し方と比べる。<b>相手によって別人になるタイプ</b>です');
-    if(PTYPE[0]==='S') dos.push('<b>返信の遅さを気にしない。</b>この人はもともと寝かせるタイプです');
+    if(PTYPE[0]==='S') dos.push('<b>返信の遅さだけで判断しない。</b>もともと寝かせるタイプの可能性があります');
     if(PTYPE[0]==='Q'&&S.you.gap>60) ng.push('いまの遅さを放置する。<b>本来すぐ返す人</b>なので、ここには意味があります');
   } else {
     ng.push('決めつける。<b>相手の連絡タイプが分かるまでは、これらは「あなたへの接し方」の話</b>です');
@@ -2054,14 +2162,22 @@ function buildDoDont(){
   return {dos:dos,ng:ng};
 }
 
-function halfStats(msgs,who){
+/* 前半・後半の境目は、同じ日が両方に入らないよう日付の切れ目にそろえる */
+function halfIdx(msgs){
   var mid=Math.floor(msgs.length/2);
+  function dk(m){ return m.t.getFullYear()*10000+m.t.getMonth()*100+m.t.getDate(); }
+  var j=mid; while(j<msgs.length-1 && j>0 && dk(msgs[j])===dk(msgs[j-1])) j++;
+  if(j>=msgs.length-3){ j=mid; while(j>3 && dk(msgs[j])===dk(msgs[j-1])) j--; }
+  return j;
+}
+function halfStats(msgs,who){
+  var mid=halfIdx(msgs);
   function calc(a){
     var gaps=[],len=[],ini=0;
     for(var i=1;i<a.length;i++){
       var dm=(a[i].t-a[i-1].t)/60000;
-      if(a[i].who!==a[i-1].who && a[i].who===who && dm<=720) gaps.push(dm);
-      if(dm>=360 && a[i].who===who) ini++;
+      if(a[i].who!==a[i-1].who && a[i].who===who && dm<=4320) gaps.push(dm);
+      if(a[i].who===who && isStart(a[i-1],a[i],dm)) ini++;
     }
     for(var j=0;j<a.length;j++) if(a[j].who===who && !/^\[/.test(a[j].x)) len.push(a[j].x.length);
     return {gap:med(gaps),len:len.length?len.reduce(function(x,y){return x+y},0)/len.length:0,ini:ini,n:a.length};
@@ -2124,26 +2240,26 @@ function renderReport(){
   var ob=[],ish=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
   var yq=S.you.text?S.you.q/S.you.text:0;
   var nightY=S.you.total?S.you.night/S.you.total:0;
-  if(S.you.gap&&S.me.gap){
-    var rr=S.you.gap/S.me.gap;
-    if(rr<0.75){
-      var f=(1/rr);
-      ob.push(['','相手の返信は<b>あなたより'+(f>=2?f.toFixed(1)+'倍':Math.round((1-rr)*100)+'%')+'速い</b>。意識が向いているサインです。ここは強みなので、焦って詰めず、このまま保てるといい。']);
-    } else if(rr>1.5){
-      ob.push(['w','相手の返信は<b>あなたより'+(rr>=2?rr.toFixed(1)+'倍':Math.round((rr-1)*100)+'%')+'遅い</b>。これ自体は悪い兆候とは限りませんが、'+(rr>=4?'<b>あなたが返しすぎている可能性</b>が高い':'<b>あなたが速すぎる可能性</b>があります')+'。相手の速度に寄せると、お互いの負担が減ります。']);
+  var sp2=spdCmp(S);
+  if(sp2){
+    var rr=sp2.r;
+    if(sp2.side==='faster'){
+      ob.push(['','相手の返信は<b>あなたより速い（'+xTimes(rr)+'）</b>。関心が向いているサインのひとつです。焦って詰めず、このまま保てるといい。']);
+    } else if(sp2.side==='slower'){
+      ob.push(['w','相手の返信は<b>あなたより遅い（'+xTimes(rr)+'）</b>。これ自体は悪い兆候とは限りませんが、'+(rr>=4?'<b>あなたが返しすぎている可能性</b>があります':'<b>あなたが速すぎる可能性</b>があります')+'。相手の速度に寄せると、お互いの負担が減ります。']);
     }
     else ob.push(['','返信の速さは<b>ほぼ釣り合っています</b>。無理に合わせにいかなくていい、心地よい距離です。']);
   }
-  if(ish>=.68) ob.push(['w','会話を始めるのは<b>あなたが'+Math.round(ish*100)+'%</b>。偏っています。一度こちらから止めて、<b>相手が来るかどうかを見る</b>価値があります。来なければ、関係の性質が分かります。']);
-  else if(ish<=.32) ob.push(['','会話は<b>相手から始まることが多い（'+Math.round((1-ish)*100)+'%）</b>。好意は向いています。受け身になりすぎないことだけ気をつけたい。']);
+  if(iniSide(ish)==='me') ob.push(['w','会話を始めるのは<b>あなたが'+Math.round(ish*100)+'%</b>。偏っています。一度こちらから止めて、<b>相手が来るかどうかを見る</b>価値があります。来なければ、関係の性質が分かります。']);
+  else if(iniSide(ish)==='you') ob.push(['','会話は<b>相手から始まることが多い（'+Math.round((1-ish)*100)+'%）</b>。関心が向いているサインのひとつです。受け身になりすぎないことだけ気をつけたい。']);
   else ob.push(['','会話の起点は<b>ほぼ半々</b>。対等なやり取りができています。']);
   if(S.you.avgLen&&S.me.avgLen){
-    if(S.you.avgLen<S.me.avgLen*0.6) ob.push(['w','相手の1通は<b>'+Math.round(S.you.avgLen)+'字</b>、あなたは<b>'+Math.round(S.me.avgLen)+'字</b>。倍以上の差があります。<b>長文は負担になっている可能性</b>が高い。相手の長さに寄せたほうがいい。']);
-    else if(S.you.avgLen>S.me.avgLen*1.6) ob.push(['','相手のほうが<b>長く書いています</b>。伝えたいことがある状態です。あなたの返しが短すぎると、熱が冷めます。']);
+    if(lenSide(S.me.avgLen,S.you.avgLen)==='youShort') ob.push(['w','相手の1通は<b>'+Math.round(S.you.avgLen)+'字</b>、あなたは<b>'+Math.round(S.me.avgLen)+'字</b>。あなたのほうが長めです。<b>長文は負担になっている可能性</b>があります。相手の長さに寄せてみてもいい。']);
+    else if(lenSide(S.me.avgLen,S.you.avgLen)==='youLong') ob.push(['','相手のほうが<b>長く書いています</b>。伝えたいことがある状態です。あなたの返しが短すぎると、熱が冷めます。']);
   }
   if(yq>=.15) ob.push(['','相手の<b>'+Math.round(yq*100)+'%</b>のメッセージに質問が入っています。<b>会話を続ける意思があります</b>。これは高い水準です。']);
   else if(yq<=.04 && S.you.text>10) ob.push(['w','相手からの質問が<b>ほとんどありません（'+Math.round(yq*100)+'%）</b>。受け身か、こちらに関心が向いていないかのどちらか。<b>こちらの質問に答えるかどうか</b>で見分けられます。']);
-  if(nightY>=.3) ob.push(['','相手のメッセージの<b>'+Math.round(nightY*100)+'%が深夜帯</b>。この時間に本音が出るタイプです。重い話をするならここ。']);
+  if(nightY>=.3) ob.push(['','相手のメッセージの<b>'+Math.round(nightY*100)+'%が深夜帯</b>。生活リズムによるものかもしれません。この時間に会話が続きやすいなら、ゆっくり話すのに向いた時間帯です。']);
   if(S.you.burst>=2.2) ob.push(['','相手は<b>一度に平均'+S.you.burst.toFixed(1)+'通</b>送ってきます。思いついたことをそのまま出すタイプ。<b>こちらも小分けにすると合います</b>。']);
   else if(S.you.burst<=1.2&&S.me.burst>=2) ob.push(['w','相手は<b>1通にまとめて送る</b>のに、あなたは連投しています。通知が連続すると負担になります。']);
   setHt('rpObs',ob.map(function(o){return '<div class="ob '+o[0]+'">'+o[1]+'</div>'}).join(''));
@@ -2155,7 +2271,7 @@ function renderReport(){
     var g=arrow(hy.a.gap,hy.b.gap,true), l=arrow(hy.a.len,hy.b.len,false);
     var ia=hy.a.ini/Math.max(1,hy.a.ini+hm.a.ini), ib=hy.b.ini/Math.max(1,hy.b.ini+hm.b.ini);
     var i2=arrow(ia||0.01,ib||0.01,false);
-    var mid2=Math.floor(MSGS.length/2);
+    var mid2=halfIdx(MSGS);
     function fd(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
     var per='<div class="perlab"><span><b>前半</b> '+fd(MSGS[0].t)+'〜'+fd(MSGS[mid2-1].t)+'（'+mid2+'通）</span>'+
             '<span class="ar2">→</span><span><b>後半</b> '+fd(MSGS[mid2].t)+'〜'+fd(MSGS[MSGS.length-1].t)+'（'+(MSGS.length-mid2)+'通）</span></div>';
@@ -2189,8 +2305,8 @@ function renderReport(){
 
   // --- tempo ---
   var tp='';
-  if(S.you.gap) tp+='相手のふだんの返信は<b>'+(S.you.gap<60?Math.round(S.you.gap)+'分':(S.you.gap/60).toFixed(1)+'時間')+'</b>。これがこの人の普通なので、<b>これより遅くても異常ではありません</b>。追撃の目安は、この2倍を超えてから。<br><br>';
-  tp+='文の長さは<b>'+Math.round(S.you.avgLen)+'字前後</b>に寄せると自然です。'+(S.me.avgLen>S.you.avgLen*1.5?'いまのあなたは長すぎます。':'いまの長さで合っています。')+'<br><br>';
+  if(S.you.gap) tp+='相手のふだんの返信は<b>'+fmtMin(S.you.gap)+'</b>。これがこの人の普通なので、<b>これより遅くても異常ではありません</b>。追撃の目安は、この2倍を超えてから。<br><br>';
+  tp+='文の長さは<b>'+Math.round(S.you.avgLen)+'字前後</b>に寄せると自然です。'+(lenSide(S.me.avgLen,S.you.avgLen)==='youShort'?'いまのあなたは相手より長めです。':(lenSide(S.me.avgLen,S.you.avgLen)==='youLong'?'いまのあなたは相手より短めです。':'いまの長さで合っています。'))+'<br><br>';
   tp+=(S.you.burst>=2?'相手は小分けに送るので、<b>こちらも分けて送る</b>とリズムが合います。':'相手は1通にまとめるタイプ。<b>連投は避けたほうがいい</b>。');
   if(S.you.sticker>=S.you.total*0.15) tp+='<br><br>スタンプをよく使う相手です。<b>言葉で返しきらず、スタンプで締める</b>のも効きます。';
   setHt('rpTempo',tp);
@@ -2201,13 +2317,13 @@ function renderReport(){
     nx='<b>次の連絡は、用件を1つに。</b>'+(GOAL.id==='boss'?'目上の相手ほど、複数の判断を同時に求められるのを嫌います。':'仕事の相手は、依頼が複数並ぶと全部止まります。')+
        (S.you.gap&&S.me.gap&&S.you.gap>S.me.gap*2?'相手の返信は遅めなので、<b>期限は余裕をもって提示する</b>こと。':'返信のテンポは悪くありません。いまの頻度で大丈夫です。');
   } else if(GOAL.fam==='guest'){
-    nx=(ish>=.68?'<b>こちらからの連絡が'+Math.round(ish*100)+'%です。</b>一度間隔を空けて、相手から来るかを見る。来ない相手に押し続けると、関係が消耗します。':
+    nx=(iniSide(ish)==='me'?'<b>こちらからの連絡が'+Math.round(ish*100)+'%です。</b>一度間隔を空けて、相手から来るかを見る。来ない相手に押し続けると、関係が消耗します。':
         '<b>来る理由を一つ作る。</b>「会いたい」より「渡したいものがある」「あの話の続き」のほうが動きます。')+
        (S.you.sticker>=S.you.total*0.15?'<br><br>スタンプが多い相手なので、<b>長文より短文＋スタンプ</b>で合わせると距離が縮まります。':'');
-  } else if(ish>=.68) nx='<b>おすすめは、3日間こちらから送らないこと。</b>いま会話の'+Math.round(ish*100)+'%をあなたが始めています。この状態では相手の本当の温度が分かりません。止めてみて、相手から来るかどうか。来たら進めていい。来なければ、関係の性質がそこで分かります。';
-  else if(S.me.avgLen>S.you.avgLen*1.8) nx='<b>次の返信は、いまの半分の長さに。</b>あなたの文は相手の'+(S.me.avgLen/Math.max(1,S.you.avgLen)).toFixed(1)+'倍あります。長さの差は、そのまま温度差に見えます。';
-  else if(S.you.gap && S.me.gap && S.you.gap>S.me.gap*2) nx='<b>次の返信は、少し寝かせてから。</b>相手のふだんの返信は'+Math.round(S.you.gap)+'分、あなたは'+Math.round(S.me.gap)+'分。速度差がそのまま温度差に見えます。相手のテンポに寄せるだけで、関係のバランスが変わります。';
-  else if(PTYPE&&CT[PTYPE]&&PTYPE[1]==='T') nx='<b>相手は「ひねる」タイプです。</b>素っ気なさを額面どおりに受け取らないでください。こちらが一定でいることが、この相手にはいちばん効きます。';
+  } else if(iniSide(ish)==='me') nx='<b>おすすめは、3日間こちらから送らないこと。</b>いま会話の'+Math.round(ish*100)+'%をあなたが始めています。この状態では相手の本当の温度が分かりません。止めてみて、相手から来るかどうか。来たら進めていい。来なければ、関係の性質がそこで分かります。';
+  else if(S.me.avgLen>S.you.avgLen*1.8 && lenSide(S.me.avgLen,S.you.avgLen)==='youShort') nx='<b>次の返信は、いまの半分の長さに。</b>あなたの文は相手の'+(S.me.avgLen/Math.max(1,S.you.avgLen)).toFixed(1)+'倍あります。長さの差は、そのまま温度差に見えます。';
+  else if(spdCmp(S) && spdCmp(S).r>2) nx='<b>次の返信は、少し寝かせてから。</b>相手のふだんの返信は'+fmtMin(S.you.gap)+'、あなたは'+fmtMin(S.me.gap)+'。速度差がそのまま温度差に見えます。相手のテンポに寄せるだけで、関係のバランスが変わります。';
+  else if(PTYPE&&CT[PTYPE]&&PTYPE[1]==='T') nx='<b>相手は「ひねる」タイプかもしれません。</b>素っ気なさだけで判断しないこと。こちらが一定でいることが、この相手には効きやすい。';
   else nx='<b>いまの関係は安定しています。</b>崩す必要はありません。次の一歩を出すなら、会う頻度を一段上げる提案が自然です。';
   setHt('rpNext',nx);
 
@@ -2250,9 +2366,14 @@ function toReply(){ buildScn(); buildChips('sitChips',SIT_CHIPS,'sitText'); rend
 /* ============ INPUT ============ */
 function start(text){
   setHt('err','');
-  MSGS=parseLINE(text);
+  var all=parseLINE(text);
+  CALLS=all.filter(function(m){return m.call});
+  MSGS=all.filter(function(m){return !m.call});
   if(MSGS.length<10){
-    setHt('err','<div class="err">読み取れたのは <b>'+MSGS.length+'通</b>でした。<br>傾向を読むには<b>最低20通、できれば50通以上</b>あると精度が出ます。<br>LINEの「トーク履歴を送信」で書き出した .txt をそのまま入れてください（一部だけコピーすると少なくなります）。</div>');
+    var why = MSGS.length===0
+      ? (/\t/.test(text)||/^\d{1,2}:\d{2}/m.test(text) ? '日付の行が見つかりませんでした。' : '「時刻・名前・本文」の形が見つかりませんでした。本文だけをコピーすると読めません。')
+      : '読み取れたのは <b>'+MSGS.length+'通</b>でした。';
+    setHt('err','<div class="err">'+why+'<br>傾向を読むには<b>最低10通、できれば50通以上</b>必要です。<br>LINEの「トーク履歴を送信」→「コピー」で出てきた内容を、<b>そのまま全部</b>貼り付けてください。</div>');
     return;
   }
   var cnt={};
@@ -2285,6 +2406,7 @@ function setMe(name){
   var others=Object.keys(cnt).filter(function(k){return k!==ME}).sort(function(a,b){return cnt[b]-cnt[a]});
   YOU=others[0];
   MSGS=MSGS.filter(function(m){return m.who===ME||m.who===YOU});
+  CALLS=CALLS.filter(function(m){return m.who===ME||m.who===YOU});
   buildGoals();
   buildChips('relChips',REL_CHIPS,'relText');
   go('goal');
