@@ -1509,10 +1509,13 @@ function youStyle(){
   var ends={}, emo=0; ys.forEach(function(x){ var t=x.trim(), e=t.match(/(笑|w+|！+|!+|〜+|ー+|[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}])$/u); if(e){ var k=e[1].replace(/w+/,'w').replace(/(！|!)+/,'！').replace(/〜+/,'〜').replace(/ー+/,'ー'); ends[k]=(ends[k]||0)+1; } if(EMO.test(t)) emo++; });
   var best='',bn=0; for(var k in ends) if(ends[k]>bn){ bn=ends[k]; best=k; }
   var S=A.S, st=S.you.total?S.you.sticker/S.you.total:0;
-  return {pol:pol, len:Math.round(S.you.avgLen||10), end:(bn>=Math.max(2,ys.length*.2))?best:'', sticker:st>=.2};
+  var fpc={}; ys.forEach(function(x){ var m=x.match(/(俺|おれ|僕|ぼく|私|わたし|あたし|うち|自分)(も|は|が|の)/); if(m) fpc[m[1]]=(fpc[m[1]]||0)+1; }); var fp='',fn=0; for(var q in fpc) if(fpc[q]>fn){fn=fpc[q];fp=q;}
+  if(!fp && pol) fp='私';
+  return {fp:fp, pol:pol, len:Math.round(S.you.avgLen||10), end:(bn>=Math.max(2,ys.length*.2))?best:'', sticker:st>=.2};
 }
 function inYourVoice(t,ys){
-  if(ys.len<=10){ t=t.split(/[、。]/)[0]; }
+  if(ys.len<=10){ var f=t.split('。')[0]; if(f.length>=3 && !/[、,]$|から$|けど$|ので$/.test(f)) t=f; }
+  if(ys.fp) t=t.replace(/^(わたし|私)(も|は)/,ys.fp+'$2'); else t=t.replace(/^(わたし|私)(も|は)/,'');
   if(ys.end && !/[！!？?〜笑w]$/.test(t) && !/^（/.test(t)) t+=ys.end;
   return t;
 }
@@ -3627,7 +3630,7 @@ function sugHTML(arr,pre){
     }
     if(lead) m=lead[2].replace(/^\s+/,'');
     var shortU=voice().lv==='casual' && A.S.me.avgLen && A.S.me.avgLen<=10 && /\n/.test(m) && GOAL.fam!=='work';
-    if(shortU) m=m.split('\n')[0];
+    if(shortU){ var l0=m.split('\n')[0]; if(/[、,]$|から$|けど$|て$|ので$|が$/.test(l0) || l0.length<4) shortU=false; else m=l0; }
     var wy=arr[j].w+(shortU?'<br><span style="font-size:11.5px">あなたは1通 '+Math.round(A.S.me.avgLen)+'字前後なので、1行にしています。スタンプを1つ添えても自然です。</span>':''); if(!shallow()) wy=wy.replace(/まだ関係が浅いうちは、?/g,'').replace(/関係が浅いうちは、?/g,'');
     if(!shallow()) wy=wy.replace(/まだ関係が浅いうちは、?/g,'').replace(/関係が浅いうちは、?/g,'');
     arr[j]={k:arr[j].k,m:arr[j].m,ms:arr[j].ms,w:wy};
