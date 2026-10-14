@@ -2469,7 +2469,7 @@ function renderMemo(){
   var mt=document.getElementById('memoText');
   if(mt && prev && prev.note) mt.value=prev.note;
   var eg0=eagerness();
-  saveMem({score:sc.total,total:R.total,date:(new Date()).getMonth()+1+'/'+(new Date()).getDate(),ts:Date.now(),note:(prev&&prev.note)||'',name:YOU,eager:eg0.v,goal:GOAL.t});
+  saveMem({score:sc.total,total:R.total,date:(new Date()).getMonth()+1+'/'+(new Date()).getDate(),ts:Date.now(),note:(prev&&prev.note)||'',eager:eg0.v,goal:GOAL.t});
 }
 function forgetPartner(btn){
   if(btn.dataset.armed!=='1'){ btn.dataset.armed='1'; btn.textContent='もう一度押すと、この相手の記録（スコア・メモ・出来事）を消します'; return; }
@@ -3591,9 +3591,9 @@ function renderRecList(){
   w.style.display='';
   var h='';
   it.forEach(function(r,i){
-    var nm=RECSHOW[r.k]&&r.v.name?r.v.name:'◯◯◯';
+    var nm='相手'+(it.length-i)+(r.v.goal?'（'+r.v.goal+'）':'');
     h+='<button class="recrow" onclick="recTap(\''+r.k+'\')"><span class="rn">'+nm.replace(/</g,'&lt;')+'</span><span class="rv">前のめり '+(r.v.eager!=null?r.v.eager:'—')+'・噛み合い '+r.v.score+'・'+(r.v.date||'')+'</span></button>';
-    if(RECOPEN[r.k]) h+='<div class="recdet">'+(r.v.goal?'目的：'+r.v.goal+'<br>':'')+'前回の分析：'+(r.v.date||'—')+'（'+(r.v.total||'—')+'通）'+(r.v.note?'<br>メモ：'+r.v.note.replace(/</g,'&lt;'):'')+'<br><button class="btn g" style="margin-top:6px" onclick="RECSHOW[\''+r.k+'\']=!RECSHOW[\''+r.k+'\'];renderRecList()">'+(RECSHOW[r.k]?'名前を伏せる':'名前を表示する')+'</button></div>';
+    if(RECOPEN[r.k]) h+='<div class="recdet">'+(r.v.goal?'目的：'+r.v.goal+'<br>':'')+'前回の分析：'+(r.v.date||'—')+'（'+(r.v.total||'—')+'通）'+(r.v.note?'<br>メモ：'+r.v.note.replace(/</g,'&lt;'):'')+'<br><span style="font-size:12px;color:var(--faint)">名前は保存していません。同じ履歴を貼ると続きから読めます。</span></div>';
   });
   setHt('recBox',h);
 }
