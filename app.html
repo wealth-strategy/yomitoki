@@ -557,6 +557,13 @@ b{font-weight:700}
 .regsw{display:inline-flex;align-self:flex-start;gap:2px;padding:3px;border-radius:999px;background:var(--sunk);border:1px solid var(--line)}
 .regsw button{font:inherit;font-size:12px;font-weight:700;color:var(--soft);background:none;border:0;border-radius:999px;padding:5px 13px;cursor:pointer}
 .regsw button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh)}
+.silh{filter:blur(16px) brightness(.55);transform:scale(.96)}
+#shmT{text-wrap:balance}
+.reclist{display:flex;flex-direction:column;gap:7px}
+.recrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.recrow .rn{font-weight:700;flex:1}
+.recrow .rv{font-size:12px;color:var(--soft);white-space:nowrap}
+.recdet{font-size:12.5px;color:var(--soft);padding:2px 4px 6px;line-height:1.8}
 .genask{background:#2a2330;color:#f3edf6;border-radius:16px;padding:14px 15px;display:flex;flex-direction:column;gap:10px;text-align:center}
 .genask b{font-size:14.5px}
 .genask .row{display:flex;gap:8px}
@@ -618,6 +625,12 @@ b{font-weight:700}
       <div id="err"></div>
       <p class="ftiny" style="margin:0">コピーがうまくいかないときは <button onclick="document.getElementById('file').click()">履歴ファイルを選ぶ</button>
         <input id="file" type="file" accept=".txt,text/plain" style="display:none"></p>
+    </div>
+
+    <div class="ctbox" id="recWrap" style="display:none">
+      <h5>この端末に記録した相手</h5>
+      <p class="ftiny" style="margin:0">名前は伏せています。タップすると前回の記録が見られます。続きを読むときは、同じ相手の履歴をもう一度貼り付けてください。</p>
+      <div class="reclist" id="recBox"></div>
     </div>
 
     <button class="btn g" id="demo">サンプルで試す（30秒）</button>
@@ -822,7 +835,7 @@ b{font-weight:700}
 
 <!-- ========== PAYWALL ========== -->
 <section id="paywall" class="sc">
-  <div class="bar"><button class="bk" onclick="go('result')">←</button><span class="ti">よみとき プラス</span></div>
+  <div class="bar"><button class="bk" onclick="pwBack()">←</button><span class="ti">よみとき プラス</span></div>
   <div class="pad">
     <div id="pwHead"></div>
     <div class="verd" style="text-align:center">
@@ -837,6 +850,16 @@ b{font-weight:700}
         <li>相手とあなたのタイプ／二人のリズム</li>
         <li>いま読み取れること（ポジティブ・気になる・判断できない）</li>
         <li>相手1人ぶんの登録</li>
+        <li>返信案のコピー 3回（案を見るのはいつでも無料）</li>
+      </ul>
+    </div>
+    <div class="inc">
+      <h4>プラスで増えるもの</h4>
+      <ul>
+        <li>詳しい読み解き（関係の変化・やっていいこと／やらないこと）</li>
+        <li>返信案ごとに、長さ違い・温度違いの案をもう2つ</li>
+        <li>送ったあとの「相手の返しの予想」</li>
+        <li>返信案のコピーが無制限</li>
       </ul>
     </div>
 
@@ -1084,17 +1107,24 @@ var CLOSE_RE=/(おやすみ(なさい)?|またね|また明日|じゃあね|あ�
 var GREET_RE=/^(おはよ|こんにちは|こんばんは|おつかれ|お疲れ|久しぶり|お久しぶり|ねえ|ねぇ|あのさ|そういえば)/;
 function isClosing(x){
   if(!x) return true;
-  if(/^\[(スタンプ|写真|画像|動画|ボイスメッセージ)\]$/.test(x.trim())) return false;
+  if(/^\[スタンプ\]$/.test(x.trim())) return true;
+  if(/^\[(写真|画像|動画|ボイスメッセージ)\]$/.test(x.trim())) return false;
   if(isQ(x)) return false;
   return x.trim().length<=4 || CLOSE_RE.test(x.trim());
 }
-/* 会話の起点：24時間以上あいたら話者に関係なく起点。
-   同じ人が6時間以上あけて送った／挨拶で始まり8時間以上あいた／相手の締めの一言から18時間以上あけて送った */
+/* 会話の起点（4回目）：
+   同じ人が6時間以上あけて送った → 起点。
+   直前が相手の発言のとき、質問・誘い・提案への遅れた返事は何時間あいても起点にしない。起点にするのは
+   (a) 相手の締めの一言（おやすみ・またね・スタンプ等）から8時間以上
+   (b) 相手のふつうの発言から72時間以上
+   (c) 挨拶で始まる発言（おはよう・おつかれ・久しぶり等）で8時間以上 */
+function askLike(x){ x=x||''; return isQ(x) || INVITE_RE.test(x) || (MEET_RE.test(x) && (refDate(x,new Date())||/\d{1,2}\s*時|\d{1,2}:\d{2}/.test(x))); }
 function isStart(p,c,dm){
-  if(dm>=1440) return true;
   if(c.who===p.who) return dm>=360;
+  if(askLike(p.x)) return false;
+  if(dm>=480 && isClosing(p.x)) return true;
   if(dm>=480 && GREET_RE.test((c.x||'').trim())) return true;
-  return dm>=1080 && isClosing(p.x);
+  return dm>=4320;
 }
 /* しきい値は1か所に：起点の偏り・文量・速さ */
 var ISH_HI=.65, ISH_LO=.35;
@@ -1129,7 +1159,7 @@ function analyze(msgs,me,you){
       q:txts.filter(function(m){return isQ(m.x)}).length,
       act:txts.filter(function(m){return ACT.test(m.x)}).length,
       fee:txts.filter(function(m){return FEE.test(m.x)}).length,
-      night:list.filter(function(m){var h=m.t.getHours();return h>=23||h<5}).length
+      night:list.filter(function(m){var h=m.t.getHours();return h<4}).length
     };
   }
   var mine=msgs.filter(function(m){return m.who===me});
@@ -1144,11 +1174,11 @@ function analyze(msgs,me,you){
     var dm=(c.t-p.t)/60000;
     if(c.who!==p.who){
       if(dm<=4320){ (c.who===me?gapMe:gapYou).push(dm); }
-      else { if(c.who===me) noRepMe++; else noRepYou++; }
+      else if(askLike(p.x)){ if(c.who===me) noRepMe++; else noRepYou++; }
       (p.who===me?bMe:bYou).push(run); run=1; runs++;
     } else {
       run++;
-      if(dm>=360 && isQ(p.x)){ if(p.who===me) noRepYou++; else noRepMe++; }
+      if(dm>=1440 && askLike(p.x)){ if(p.who===me) noRepYou++; else noRepMe++; }
     }
     if(isStart(p,c,dm)){ if(c.who===me) iniMe++; else iniYou++; }
   }
@@ -1176,19 +1206,22 @@ function analyze(msgs,me,you){
   your.forEach(function(m){ var h=m.t.getHours(), b=h>=6&&h<12?0:(h>=12&&h<18?1:(h>=18&&h<23?2:3)); grid[m.t.getDay()][b]++; });
   R.grid=grid;
   /* 日時・場所の提案（会う話に日付・曜日・時刻が入っているもの） */
-  function props(list){ return list.filter(function(m){ return !/^\[/.test(m.x) && MEET_RE.test(m.x) && (refDate(m.x,m.t)||/\d{1,2}\s*時|\d{1,2}:\d{2}/.test(m.x)); }).length; }
-  R.propMe=props(mine); R.propYou=props(your);
+  function props(who){ var n=0; for(var i=0;i<msgs.length;i++) if(msgs[i].who===who && isProp(msgs,i)) n++; return n; }
+  R.propMe=props(me); R.propYou=props(you);
   return {S:S,R:R,mine:mine,your:your};
 }
 
 /* ============ FREE TEXT ============ */
 var REL='', SIT='';
 var REL_CHIPS=['学校・バイト先','職場の人','先輩','マッチングアプリ','結婚相談所','SNSで知り合った','友達の紹介','お店で出会った','仲良くなりたい','付き合いたい','また会いたい'];
-var SIT_CHIPS=['既読がつかない','相手の返信が遅い','自分の返信が遅くなった','冷たくされてる','気まずくなった','喧嘩した','久しぶりすぎる','断られた直後','会う約束をしたい','デートなのか知りたい','距離を縮めたい','お店に来てほしい'];
+var SIT_CHIPS=['既読がつかない','相手の返信が遅い','自分の返信が遅くなった','冷たくされてる','気まずくなった','喧嘩した','久しぶりすぎる','断られた直後','会う約束をしたい','前日に確認したい','デートなのか知りたい','温度を探りたい','ほかの人とも会ってるか','距離を縮めたい','お店に来てほしい'];
 /* 上から順に判定する。強い出来事（断られた・喧嘩）を先に */
 var SITU=[
  {id:'lateme', re:/(返信が遅くなった|返事が遅くなった|返すのが遅|返せてな|返信できてな|返事できてな|既読(無視|スルー)しちゃ|放置しちゃ|返信忘れ|返事忘れ)/, label:'自分の返信が遅れた', me:1},
- {id:'probe',  re:/(デート(なの|か|かな|って|だと)|脈(ある|あり)|温度を探|重くならずに|気がある|好意ある|どう思われて)/, label:'相手の気持ちを軽く探りたい'},
+ {id:'confirm',re:/(前日|確認したい|確認の連絡|リマインド|\d{1,2}日に(予定|会う|食事|お食事|デート|約束)|(会う|食事|お食事|デート)の?(予定|約束)が(ある|あり|決まって|入って)|予定(が|を)(ある|入って|決まって))/, label:'約束の前の確認'},
+ {id:'others', re:/((ほか|他)の(人|ひと|男|女|子).{0,8}(会って|いる|と)|並行|本命かどうか|ほかにも誰か)/, label:'ほかの人がいるか気になる'},
+ {id:'probe',  re:/(デート(なの|か|かな|って|だと|だった)|2人でって|二人でって|2人で行|二人で行)/, label:'これってデート？'},
+ {id:'temp',   re:/(温度を探|温度感|重くならずに|脈(ある|あり)|気がある|好意ある|どう思われて|探りたい)/, label:'相手の温度を軽く探りたい'},
  {id:'meet',   re:/(会う約束|約束をしたい|会いたい|誘いたい|デートに誘|ご飯に誘|会う予定)/,  label:'会う約束をつくりたい'},
  {id:'awk',    re:/(気まず|変な空気|微妙な空気|ぎくしゃく)/,                  label:'気まずくなった'},
  {id:'reject', re:/(断ら|断られ|振ら|フラ|ふられ|脈な)/,            label:'断られた後'},
@@ -1230,6 +1263,21 @@ function addChip(taId,txt){
   ta.focus();
 }
 var SITSETS={
+ confirm:[
+  {k:'A 確認する',m:'◯日、◯時に◯◯で大丈夫かな？\n楽しみにしてる',ms:'◯日、◯時に◯◯で大丈夫ですか？\n楽しみにしています',w:'<b>時間と場所の確認</b>に「楽しみ」を添える。確認だけで終わらせない一言が効きます。'},
+  {k:'B 楽しみだけ',m:'明日楽しみにしてる！',ms:'明日、楽しみにしています！',w:'もう決まっているなら、<b>確認より「楽しみ」</b>だけでも十分です。'},
+  {k:'C 当日の朝に',m:'（当日の朝）今日よろしくね！',ms:'（当日の朝）今日はよろしくお願いします！',w:'前日に送らないなら、<b>当日の朝の一言</b>でも同じ効果があります。'}
+ ],
+ others:[
+  {k:'A 自分の状況を先に',m:'{I}はいま、ほかの人とは会ってないよ',ms:'{I}はいま、ほかの方とはお会いしていません',w:'<b>相手に聞く前に、自分の状況を先に出す</b>。相手も言いやすくなります。'},
+  {k:'B 会ったときに',m:'（文字では聞かず、次に会ったときの様子で確かめる）',w:'並行しているかは、<b>次の約束への乗り方</b>にいちばん出ます。文字で聞くと重くなりやすい。'},
+  {k:'C 次の約束で見る',m:'次はどこ行こっか？',ms:'次はどこに行きましょうか？',w:'<b>次の約束に前向きか</b>で、温度はかなり分かります。'}
+ ],
+ temp:[
+  {k:'A 軽く探る',m:'最近どう？\n次いつ会えるかなって思ってた',ms:'最近どうですか？\n次いつ会えるかなって思っていました',w:'<b>「この先」を聞かない</b>。次に会う話が自然に出るかで、温度が分かります。'},
+  {k:'B 気持ちを少しだけ',m:'{I}はまた会いたいなって思ってるよ',ms:'{I}はまた会いたいなと思っています',w:'<b>相手に答えを求めず、自分の気持ちだけ置く</b>。返事の温度で相手の気持ちが見えます。'},
+  {k:'C 相手から来るかを見る',m:'（次の話が相手から出るか、1〜2日見てみる）',w:'温度は<b>相手から次の話が出るか</b>にいちばん正直に出ます。'}
+ ],
  cold:[
   {k:'A 触れない型',m:'そういえば、この前言ってた◯◯どうなった？',w:'<b>距離の話に触れない</b>。冷えている理由が分からないまま確認すると、相手は説明を迫られて余計に引きます。まず軽い話で線を繋ぎ直す。'},
   {k:'B 直球型',m:'最近ちょっと距離感じてるんだけど、\nなんかあった？',w:'<b>責めずに事実だけ置く</b>。「なんで冷たいの」は責める形になります。原因を聞くのではなく、気づいていることだけ伝える。'},
@@ -1298,7 +1346,7 @@ function styleNote(){
   else if(ls==='youLong') t.push('この相手には、あなたのほうが短めです（1回に'+Math.round(S.me.turnLen)+'字／相手'+Math.round(S.you.turnLen)+'字）。<b>一言足しても自然</b>です。');
   if(!MYTYPE||!CT[MYTYPE]) return t.length?'<div class="quo"><b>この相手への長さ</b><br>'+t.join('<br>')+'</div>':'';
   var m=MYTYPE;
-  if(m[0]==='Q'&&PTYPE&&PTYPE[0]==='S') t.push('相手は寝かせるタイプなので、<b>送ったあとすぐ追撃しない</b>こと。');
+  if(m[0]==='Q'&&PTYPE&&PTYPE[0]==='S') t.push('相手を寝かせるタイプと見立てているなら、<b>送ったあとすぐ追撃しない</b>ほうが無難です。');
   if(m[1]==='T') t.push('あなたはひねるタイプ。<b>素直すぎると感じても、このくらいで届くことが多いです。</b>');
   if(!t.length) return '';
   return '<div class="quo"><b>あなたの文体に寄せるなら</b><br>'+t.join('<br>')+'</div>';
@@ -1307,7 +1355,14 @@ function applySit(){
   SIT=document.getElementById('sitText').value.trim();
   LASTMODE='sit'; CURSCN=-1;
   var sb=document.querySelectorAll('#scnBox button'); for(var q=0;q<sb.length;q++) sb[q].classList.remove('on');
-  var d=detectSit(SIT);
+  var d=detectSit(SIT), o0=stance();
+  if(d && d.id==='meet' && o0.id==='plan') d=SITU.filter(function(z){return z.id==='confirm'})[0];
+  /* 「◯◯って送って失敗した」：送った文と意味の近い案は出さない */
+  SENTFAIL='';
+  var sf=SIT.match(/「([^」]{2,40})」|([^。、\n]{2,30})(って|と)送(っ|り|信)/);
+  if(sf && /(失敗|だめ|ダメ|スルー|返事(が)?な|返信(が)?な|微妙|引かれ|既読)/.test(SIT)) SENTFAIL=(sf[1]||sf[2]||'').trim();
+  /* 場面の語（映画・通話・おやすみ）だけが書かれていれば、その場面の案に */
+  if(!d){ var kw=SIT.match(/映画|電話|通話|おやすみ/); if(kw){ var nm2={'映画':'映画','電話':'通話','通話':'通話','おやすみ':'おやすみ'}[kw[0]], ix=scnIdx(nm2); if(ix<0){ SCN.push({k:nm2,e:SCNE[nm2]||'💬'}); ix=SCN.length-1; } pickScn(ix); return; } }
   var head='';
   if(SIT) head='<div class="quo"><b>あなたが書いた状況</b><br>'+SIT.replace(/</g,'&lt;')+
     (d?'<br><br>→ <span class="sitbadge">'+d.label+'</span> として組み立てました':'')+'</div>';
@@ -1340,11 +1395,33 @@ function applySit(){
     {k:'A いつもの話題で',m:'そういえば、この前言ってた◯◯どうなった？',w:'<b>断られた件には触れなくていい</b>。いつもどおりの話題のほうが、相手も気が楽です。'},
     {k:'B 相手の話に乗る',m:'それめっちゃいいじゃん\nどうだった？',w:'<b>相手が話したことに乗って、質問をひとつ</b>。'},
     {k:'C 次の誘いは急がない',m:'（次に誘うのは、相手から話題が来るようになってから）',w:'一度断られた相手には、<b>やり取りが温まってから</b>誘い直すほうが通ります。'}]; }
-  arr=notSent(arr);
-  var h=head+styleNote()+sugHTML(arr,'mg');
+  arr=notSent(semFilter(arr));
+  var h=head+styleNote()+sugHTML(arr,'mg')+paidExtra(arr);
   setHt('sugBox',h+remainLabel());
   document.getElementById('repNote').style.display='block';
   toSug();
+}
+/* 送って失敗した文と「意味が近い」案を外す（文字の並びだけでなく、言いたいことのまとまりで見る） */
+var SEMG=[/距離|そっけ|素っ気|冷た|なんかあった|何かあった|よそよそ/,/寂し|会いたい/,/ごめん|すみません|申し訳/,/忙しそう|落ち着いたら/,/この先|将来|本気/];
+function semFilter(arr){
+  if(!SENTFAIL) return arr;
+  var g=SEMG.filter(function(r){return r.test(SENTFAIL)});
+  var out=arr.filter(function(it){ var t=V(it.m,it.ms); if(simil(t,SENTFAIL)>=0.45) return false; for(var i=0;i<g.length;i++) if(g[i].test(t)) return false; return true; });
+  return out.length?out:arr;
+}
+/* プラス：案ごとの長さ違い・温度違いと、相手の返しの予想 */
+function paidExtra(arr){
+  var first=null; for(var i=0;i<arr.length;i++){ var t=V(arr[i].m,arr[i].ms); if(!/^（[^）]*）$/.test(t)){ first=t.replace(/^（[^）]*）\s*/,''); break; } }
+  if(!first) return '';
+  var S=A.S, pol=voice().lv!=='casual';
+  if(!PAID) return '<div class="quo" style="font-size:12.5px">プラスでは、この案の<b>長さ違い・温度違いの2案</b>と、<b>相手の返しの予想</b>も出ます。</div>';
+  var short=first.split('\n')[0], warm=first+'\n'+(pol?'お話しできると嬉しいです':'話せたら嬉しいな');
+  var ex=[{k:'＋ 短くする',m:short,w:'<b>1行だけ</b>にした版。相手の1回の量（'+Math.round(S.you.turnLen)+'字前後）に近づけたいときに。'},
+          {k:'＋ 温度を少し上げる',m:warm,w:'<b>気持ちをひとこと足した</b>版。相手からの反応が続いているときに。'}];
+  var yq=S.you.text?S.you.q/S.you.text:0;
+  var pr='返事はふだんどおりなら<b>'+fmtMin(S.you.gap)+'前後</b>、長さは<b>'+Math.round(S.you.turnLen)+'字くらい</b>。'+(yq>=.12?'<b>質問が返ってくる</b>可能性が高い相手です。':'質問は返ってこないことが多いので、<b>短い相づちでも普通</b>です。')+(S.you.sticker>=S.you.total*0.15?'スタンプだけの返事もよくある相手です。':'');
+  var h=''; for(var j=0;j<ex.length;j++){ var id='px'+j; h+='<div class="sug"><div class="hd"><span class="k">'+ex[j].k+'</span><button class="cp" onclick="cp(this,\''+id+'\')">コピー</button></div><div class="bub"><div class="m" id="'+id+'" onclick="tapBub(this)">'+ex[j].m.replace(/</g,'&lt;')+'</div></div><div class="wy">'+ex[j].w+'</div></div>'; }
+  return h+'<div class="quo"><b>相手の返しの予想</b><br>'+pr+'</div>';
 }
 /* 状況から作ったときは、案の位置まで送る */
 function toSug(){
@@ -1573,10 +1650,11 @@ function ctToggle(){
 }
 function showCTRes(){
   var c=MYTYPE; if(!CT[c]) return;
-  setHt('ctIll', ill(c,'big me'));
+  var asking=(GDEF[c] && !loadGen());
+  setHt('ctIll', asking ? '<div class="silh">'+ill(c,'big me')+'</div>' : ill(c,'big me'));
   setTx('ctN',nameOf(c));
-  setHt('genAsk', (GDEF[c] && !loadGen()) ? '<div class="genask"><b>キャラの絵を選んでください</b><span style="font-size:12px;color:#b5aac1">シェア画像にもこの絵が使われます。あとで下の切り替えでも変えられます</span><div class="row"><button onclick="setGen(\'m\')">男の子</button><button onclick="setGen(\'f\')">女の子</button></div></div>' : '');
-  setHt('ctGen', GDEF[c] ? '<div class="gsw" role="group" aria-label="キャラの見た目"><button class="'+(genOf(c)==='m'?'on':'')+'" onclick="setGen(\'m\')">男の子</button><button class="'+(genOf(c)==='f'?'on':'')+'" onclick="setGen(\'f\')">女の子</button></div>' : '');
+  setHt('genAsk', asking ? '<div class="genask"><b>キャラの絵を選んでください</b><span style="font-size:12px;color:#b5aac1">シェア画像にもこの絵が使われます。あとで下の切り替えでも変えられます</span><div class="row"><button onclick="setGen(\'m\')">男の子</button><button onclick="setGen(\'f\')">女の子</button></div></div>' : '');
+  setHt('ctGen', (GDEF[c] && !asking) ? '<div class="gsw" role="group" aria-label="キャラの見た目"><button class="'+(genOf(c)==='m'?'on':'')+'" onclick="setGen(\'m\')">男の子</button><button class="'+(genOf(c)==='f'?'on':'')+'" onclick="setGen(\'f\')">女の子</button></div>' : '');
   setTx('ctC',c.split('').join('・')); setTx('ctT',CT[c].t);
   setHt('ctAx', axBars(c, MYPCT));
   SHARE.code=null; SHARE.p=null; setTimeout(function(){ buildShareImg(c).catch(function(){}); },400);
@@ -1599,9 +1677,9 @@ function showCTRes(){
 function setGen(g){
   var c=MYTYPE; if(!GDEF[c]) return;
   var same=(genOf(c)===g && loadGen()); saveGen(g); setHt('genAsk','');
-  if(same) return;
+  setHt('ctGen','<div class="gsw" role="group" aria-label="キャラの見た目"><button class="'+(g==='m'?'on':'')+'" onclick="setGen(\'m\')">男の子</button><button class="'+(g==='f'?'on':'')+'" onclick="setGen(\'f\')">女の子</button></div>');
   setHt('ctIll', ill(c,'big me')); setTx('ctN',nameOf(c));
-  var bs=document.querySelectorAll('#ctGen button'); for(var i=0;i<bs.length;i++) bs[i].className=((i===0?'m':'f')===g)?'on':'';
+  if(same) return;
   SHARE.code=null; SHARE.p=null; buildShareImg(c).catch(function(){});
 }
 function ctExit(){
@@ -1742,7 +1820,7 @@ function openShareModal(){
   buildShareImg(MYTYPE).then(function(r){
     im.src=r.url;
     var a=document.getElementById('shmDl'); a.href=r.url; a.download='yomitoki-'+MYTYPE+'.png';
-    setHt('shmT','画像を<b>長押し</b>して「写真に保存」→ ストーリーに載せられます');
+    setHt('shmT','画像を<b>長押し</b>して「写真に保存」<br>そのままストーリーに載せられます');
   }).catch(function(){ setTx('shmT','画像をつくれませんでした。この画面をスクリーンショットしてください。'); });
 }
 function closeShare(){ var m=document.getElementById('shm'); if(m) m.classList.remove('on'); }
@@ -1805,7 +1883,7 @@ function renderBase(tgt){
   // 温度（ひねり）
   if(P[1]==='T'){
     items.push(['感情の出し方','ひねるタイプ','fl','このタイプは<b>好きな相手ほど、わざと一拍置いたり素っ気なくなったりすることがあります。</b>'+
-      (spdCmp(S)&&spdCmp(S).side==='slower'?'いまの遅さが好意の裏返し<b>の可能性もあります</b>が、下の実測の兆候とあわせて判断してください。':'')+
+      (spdCmp(S)&&spdCmp(S).side==='slower'?'ただし、これは<b>あなたの見立て</b>です。いまの遅さの理由は、このデータからは分かりません。':'')+
       '表面と中身が一致しないことがあるタイプです。']);
   } else {
     items.push(['感情の出し方','そのまま出すタイプ','ok','このタイプは<b>気持ちが速さと量に素直に出やすい</b>とされます。いまの数字は、比較的そのままの意味で読める可能性があります。']);
@@ -1851,7 +1929,7 @@ function hk(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h<<5)+h+t.charCodeA
 function evKey(){ return 'yomitoki:e:'+hk('ev|'+(YOU||'')); }
 function migrate(oldK,newK){ try{ var v=localStorage.getItem(oldK); if(v!=null){ if(localStorage.getItem(newK)==null) localStorage.setItem(newK,v); localStorage.removeItem(oldK); } }catch(e){} }
 function loadEv(){ migrate('yomitoki:ev:'+(YOU||''),evKey()); try{ var v=localStorage.getItem(evKey()); return v?JSON.parse(v):[]; }catch(e){ return []; } }
-function saveEv(a){ if(noRec()||FORGOT[evKey()]) return; try{ localStorage.setItem(evKey(),JSON.stringify(a)); }catch(e){} }
+function saveEv(a){ if(noRec()||isForgot(evKey())) return; try{ localStorage.setItem(evKey(),JSON.stringify(a)); }catch(e){} }
 function addEv(){
   var dEl=document.getElementById('evDate'), tEl=document.getElementById('evText');
   if(!dEl||!tEl||!dEl.value||!tEl.value.trim()) return;
@@ -1917,10 +1995,44 @@ function renderEv(){
 /* ============ 日付・予定・状況（助言はすべて stance() に従う） ============ */
 var WD='日月火水木金土';
 var MEET_RE=/(行(?!動|政|列|事)|会(?!社|議|計|員|話|費)|ご飯|ごはん|飯|飲み|飲も|店(?!長|員|舗)|集合|待ち合わせ|食事|お茶|ランチ|ディナー|映画|ライブ|デート|案内|遊|駅|迎え|予約)/;
-var DECLINE_RE=/(予定(が)?ある|無理|難しい|行けな|厳しい|また今度|やめと|やめて(おく|も)|キャンセル|中止|延期|ドタキャン|埋め合わせ|行けなくな|なしで|今日はやめ)/;
+var DECLINE_RE=/(予定(が)?ある|無理|難しい|行けな|厳しい|また今度|やめと|やめて(おく|も)|キャンセル|中止|延期|ドタキャン|埋め合わせ|行けなくな|なしで|今日はやめ|体調(が|を)?(崩|悪|よくな|良くな|すぐれ)|来週にして|別の日に(して|でき)|日にち(を)?変え|日程(を)?変え|都合(が)?(悪|つかな)|また別の日|ごめん.{0,15}(厳し|無理|難し)|(バイト|仕事|シフト|予定)(が)?入(って|った|る))/;
 var AGREE_RE=/(楽しみ|いいよ|いいね|いいです|OK|ok|おけ|了解|大丈夫|決まり|そうしよ|にしよ|でいいよ|でお願い|承知|空いて(る|ます)|行ける|行けます|行こ|予約(し|でき)|ぜひ|もちろん)/;
 var INVITE_RE=/(行かない|行きませんか|しない[?？]|しませんか|どう[?？]|どうですか|いかが|空いてる[?？]|空いてますか|会えない[?？]|会えませんか|でもいい[?？]|いい[?？]\s*$|とか[?？]?\s*$)/;
 function dayKey(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+/* 相手発の「日時・場所の提案」。こちらの候補に答えただけ・あとで取りやめになったものは数えない */
+var PROP_RE=/(なら|あたり|とか|でもいい|はどう|どう[?？]|行こ|行かない|しよう|しない[?？]|空いて)/;
+var TIME_RE=/\d{1,2}\s*時|\d{1,2}:\d{2}|お昼|ランチ|夜ご飯|夕方/;
+function isProp(msgs,i){
+  var m=msgs[i], x=m.x||''; if(/^\[/.test(x)||DECLINE_RE.test(x)) return false;
+  var dt=!!(refDate(x,m.t)||TIME_RE.test(x)), pl=MEET_RE.test(x)||/駅|あたり|周辺|2人で|二人で/.test(x);
+  if(!((dt&&pl)||(PROP_RE.test(x)&&(dt||pl)))) return false;
+  /* こちらが出した候補に「いいです」と答えただけのものは、相手発の提案ではない */
+  if(AGREE_RE.test(x)) for(var k=i-1;k>=Math.max(0,i-3);k--){ var q=msgs[k]; if(q.who===m.who) continue;
+    if(refDate(q.x,q.t)||TIME_RE.test(q.x)||MEET_RE.test(q.x)) return false; break; }
+  for(var j=i+1;j<Math.min(msgs.length,i+9);j++) if(DECLINE_RE.test(msgs[j].x)) return false;
+  return true;
+}
+/* 約束の時間と場所（履歴から拾えたものだけ） */
+function planDetail(pl){
+  if(!pl||!pl.src) return {tm:'',pl:''};
+  var i=pl.src.i, idx=[];
+  for(var a=i;a<Math.min(MSGS.length,i+14);a++) idx.push(a);
+  for(var b=i-1;b>=Math.max(0,i-12);b--) idx.push(b);
+  var tm='', pc='', shop='', TR=/(\d{1,2})\s*時(\s*半|\s*\d{1,2}\s*分)?|\d{1,2}:\d{2}/g;
+  idx.forEach(function(k){
+    var m=MSGS[k], x=(m&&m.x)||''; if(!x || /^\[/.test(x) || isWork(m)) return;
+    var st=x.match(/([一-龠ァ-ヶーA-Za-z0-9]{1,10}駅)/), times=[], mm; TR.lastIndex=0;
+    while((mm=TR.exec(x))) times.push({v:mm[0].replace(/\s/g,''),at:mm.index});
+    if(st && !pc){ pc=st[1]; var at=x.indexOf(st[1]), before=times.filter(function(t){return t.at<at}); if(before.length) tm=before[before.length-1].v; }
+    if(!tm && times.length) tm=times[0].v;
+    if(!tm && /お昼|ランチ|昼(?!間|休)/.test(x)) tm='お昼';
+    if(!pc){ var ar=x.match(/([一-龠ァ-ヶー]{2,6})(あたり|周辺|らへん)/); if(ar && !/^(来週|今週|週末|日曜|土曜|金曜)/.test(ar[1])) pc=ar[1]; }
+    x.split('\n').forEach(function(l){ l=l.trim(); if(shop||!l||l.length>22) return;
+      if(/(処|店|屋|亭|カフェ|レストラン|ダイニング|ビストロ|バル|食堂|喫茶)/.test(l) && !/[?？。！!、]/.test(l) && !/^(お店|店|いい店|このお店)/.test(l) && !/(見つけ|探し|行きたい|気になる|決まり)/.test(l)) shop=l.replace(/^(場所は|お店は)/,'');
+    });
+  });
+  return {tm:tm,pl:pc||shop,shop:shop};
+}
 function addD(d,n){ var x=dayKey(d); x.setDate(x.getDate()+n); return x; }
 function fmtDay(d){ return (d.getMonth()+1)+'/'+d.getDate()+'（'+WD[d.getDay()]+'）'; }
 /* 文中の日付表現を、そのメッセージの日付を基準に具体的な日付にする */
@@ -1944,7 +2056,7 @@ function refDate(x,base){
 /* 直近10日のやり取りから「会う約束」を探す。相手側の同意か「楽しみ」「予約」があるものだけ */
 function detectPlan(){
   if(!MSGS.length) return null;
-  var ref=dayKey(MSGS[MSGS.length-1].t), from=addD(ref,-10), found=null;
+  var ref=dayKey(new Date()), from=addD(ref,-14), found=null;
   for(var i=0;i<MSGS.length;i++){
     var m=MSGS[i]; if(m.t<from || /^\[/.test(m.x)) continue;
     var d=refDate(m.x,m.t); if(!d) continue;
@@ -1960,7 +2072,7 @@ function detectPlan(){
   for(var k=found.i+1;k<MSGS.length;k++) if(DECLINE_RE.test(MSGS[k].x) && !/楽しみ/.test(MSGS[k].x)) return null;
   var diff=Math.round((found.d-ref)/86400000);
   if(diff>=0 && diff<=21) return {st:'before',d:found.d,days:diff,src:found};
-  if(diff<0 && diff>=-3) return {st:'after',d:found.d,days:-diff,src:found};
+  if(diff<0 && diff>=-7) return {st:'after',d:found.d,days:-diff,src:found};
   return null;
 }
 /* 「新しいやり取りを足す」に入れた内容を、最後のメッセージとして扱う */
@@ -1976,11 +2088,11 @@ function newMsg(){
 var STC=null;
 function stance(){
   if(STC) return STC;
-  var last=MSGS[MSGS.length-1], nm=newMsg(), L=nm||last;
-  var o={id:'free',couple:(GOAL.id==='dating'||GOAL.id==='konkatsu'),plan:nm?null:detectPlan(),L:L};
+  var last=MSGS[MSGS.length-1], L=last;
+  var o={id:'free',couple:(GOAL.id==='dating'||GOAL.id==='konkatsu'),plan:detectPlan(),L:L};
   var gy=(A&&A.S.you.gap)||60;
   o.waitMin=Math.max(720,gy*2);
-  o.ago=nm?0:Math.max(0,(Date.now()-last.t)/60000);
+  o.ago=last.added?0:Math.max(0,(Date.now()-last.t)/60000);
   o.partnerAsk = L.who!==ME && (isQ(L.x)||INVITE_RE.test(L.x));
   if(o.plan) o.id=o.plan.st==='before'?'plan':'after';
   else if(L.who!==ME) o.id=o.partnerAsk?'answer':'reply';
@@ -1988,9 +2100,11 @@ function stance(){
   else { o.id='wait'; o.chaseOK=o.ago>=o.waitMin; }
   STC=o; return o;
 }
+/* 「一度止めて様子を見る」系の助言を出してよいか（全画面共通） */
+function mayHold(){ var o=stance(); return !(o.couple || GOAL.id==='konkatsu' || o.id==='plan' || o.id==='after' || o.id==='answer' || o.id==='reply'); }
 function shortTx(x,n){ x=(x||'').replace(/\s+/g,' '); n=n||24; return x.length>n?x.slice(0,n)+'…':x; }
 /* 履歴によく出てくる話題語（返信案の◯◯に入れる） */
-var TOPIC_STOP=/^(スタンプ|メッセージ|ライン|トーク|ファイル|ボイス|オッケー|ありがとう|ゴメン|ごめん|ホント|マジ|ヤバ|スケジュール)$/;
+var TOPIC_STOP=/^(スタンプ|メッセージ|ライン|トーク|ファイル|ボイス|オッケー|ありがとう|ゴメン|ごめん|ホント|マジ|ヤバ|スケジュール|インドア|アウトドア|タイプ|イメージ|テンション|ペース|タイミング|チャンス|メンバー|ストレス|プライベート|ハード|オススメ|おすすめ|スタッフ|シフト|カフェ|レストラン|ランチ|ディナー|デート)$/;
 var KSTOP=/^(今日|明日|昨日|今度|来週|今週|先週|週末|最近|時間|仕事|本当|大丈夫|了解|自分|写真|通話|連絡|返信|予定|都合|場所|会社|会議|午後|午前|毎日|全然|結構|一緒|次回|本日|先日|今回|確認|本番|全部|楽|大変|一番|残念|無理|全員|相手|気持|今年|来年|今月|来月|何時|何日|以外|最高|普通|元気|週間|変更|対応|資料|議事録|先方|感謝|失礼|宜|件|お店|今夜|今晩)$/;
 var TOPIC=undefined;
 /* 人の名前・呼び方は話題にしない */
@@ -2002,23 +2116,27 @@ function nameish(w,x){
 }
 function topicWord(){
   if(TOPIC!==undefined) return TOPIC;
-  var recent=MSGS.slice(-80), score={};
+  var recent=MSGS.slice(-80), score={}, ban={};
+  MSGS.forEach(function(m){ if(DECLINE_RE.test(m.x)||isWork(m)) ((m.x.match(/[ァ-ヶー]{3,8}|[一-龠々]{2,4}/g))||[]).forEach(function(w){ ban[w]=1; }); });
   for(var i=0;i<recent.length;i++){
     var x=recent[i].x; if(/^\[/.test(x)) continue;
+    if(recent[i].who!==YOU || x.length<6 || DECLINE_RE.test(x) || MEET_RE.test(x) || refDate(x,recent[i].t) || TIME_RE.test(x)) continue;
     var ws=(x.match(/[ァ-ヶー]{3,8}/g)||[]).filter(function(w){return !TOPIC_STOP.test(w) && !/^ー/.test(w) && !/^(.{2})\1$/.test(w) && !nameish(w,x)});
     var ks=(x.match(/[一-龠々]{2,4}/g)||[]).filter(function(w){return !KSTOP.test(w) && !nameish(w,x)});
+    if(isWork(recent[i])) continue;
+    ws=ws.filter(function(w){return !ban[w]}); ks=ks.filter(function(w){return !ban[w]});
     ws.forEach(function(w){ score[w]=(score[w]||0)+3+(recent[i].who===YOU?1:0)+i/recent.length; });
     ks.forEach(function(w){ score[w]=(score[w]||0)+1+(recent[i].who===YOU?1:0)+i/recent.length; });
   }
-  var best='',bv=0; for(var k in score) if(score[k]>bv){ bv=score[k]; best=k; }
-  TOPIC = bv>=3.5 ? best : '';
+  var best='',bv=0; for(var k in score){ var need=/^[ァ-ヶー]+$/.test(k)?3.5:6.5; if(score[k]>=need && score[k]>bv){ bv=score[k]; best=k; } }
+  TOPIC = best;
   return TOPIC;
 }
 /* 似た文の判定（すでに自分が送った文と同じ案を出さない） */
 function bigr(x){ x=(x||'').replace(/[\s。、！!？?〜ー…\n]/g,''); var o={},n=0; for(var i=0;i<x.length-1;i++){ o[x.substr(i,2)]=1; n++; } return {o:o,n:n}; }
 function simil(a,b){ var A1=bigr(a),B1=bigr(b),c=0; if(!A1.n||!B1.n) return 0; for(var k in A1.o) if(B1.o[k]) c++; return 2*c/(Object.keys(A1.o).length+Object.keys(B1.o).length); }
 function notSent(arr){
-  var mine=MSGS.filter(function(m){return m.who===ME && !/^\[/.test(m.x)}).slice(-40).map(function(m){return m.x});
+  var mine=MSGS.filter(function(m){return m.who===ME && !/^\[/.test(m.x)}).slice(-40).map(function(m){return m.x}).concat(SENTFAIL?[SENTFAIL]:[]);
   var out=arr.filter(function(it){ var t=V(it.m,it.ms); if(/^（[^）]*）$/.test(t)) return true; for(var i=0;i<mine.length;i++) if(simil(t,mine[i])>=0.72) return false; return true; });
   return out.length?out:arr;
 }
@@ -2056,10 +2174,10 @@ function chg(kind,oldv,newv){
 /* 分析の窓：長い履歴は直近4週間で読む（全期間平均で甘く出ないように） */
 function winMsgs(){
   if(MSGS.length<2) return MSGS;
-  var t1=MSGS[MSGS.length-1].t, span=(t1-MSGS[0].t)/86400000;
-  if(span<=42) return MSGS;
-  var cut=new Date(dayKey(t1).getTime()-27*86400000), w=MSGS.filter(function(m){return m.t>=cut});
-  return w.length>=12?w:MSGS;
+  var B=BASE.length?BASE:MSGS, t1=B[B.length-1].t, span=(t1-B[0].t)/86400000;
+  if(span<42) return B;
+  var cut=new Date(dayKey(t1).getTime()-20*86400000), w=B.filter(function(m){return m.t>=cut});
+  return w.length>=12?w:B;
 }
 /* 相手の前のめり度（噛み合いとは別。相手がどれだけ自分から動いているか） */
 function eagerness(){
@@ -2071,7 +2189,7 @@ function eagerness(){
   var cy=CALLS.filter(function(m){return m.who===YOU && m.sec>0}).length;
   var p4=Math.min(cy,2)/2*10; if(CALLS.length) ev.push('相手からの通話 '+cy+'回');
   var lr=S.me.turnLen?Math.min(1,S.you.turnLen/S.me.turnLen):0.5;
-  var p5=lr*10; ev.push('1回に書く量 '+Math.round(S.you.turnLen)+'字 / あなた '+Math.round(S.me.turnLen)+'字');
+  var p5=lr*10; ev.push('1回に書く量（連投まとめ） '+Math.round(S.you.turnLen)+'字 / あなた '+Math.round(S.me.turnLen)+'字');
   var p6=S.you.gap?Math.max(0,Math.min(1,(720-S.you.gap)/690))*10:4;
   var tot=Math.round(p1+p2+p3+p4+p5+p6);
   return {v:tot,ev:ev,lab:tot>=65?'高い':(tot>=40?'ふつう':'低め')};
@@ -2092,12 +2210,15 @@ function relState(){
   var ish=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
   var yq=S.you.text?S.you.q/S.you.text:0;
   var trend=0;
-  if(MSGS.length>=24){
-    var hy=periodStats(MSGS,YOU);
+  if(BASE.length>=24){
+    var hy=periodStats(BASE,YOU);
     trend=chg('gap',hy.a.gap,hy.b.gap)+chg('len',hy.a.len,hy.b.len)+chg('pct',hy.a.inis?hy.a.ini/hy.a.inis:0,hy.b.inis?hy.b.ini/hy.b.inis:0);
   }
-  var sp=spdCmp(S);
-  if(trend<=-2) return {n:'冷却期',e:'🧊',d:'前より反応が落ちています。いま追うと、さらに離れます'};
+  var sp=spdCmp(S), o=stance(), eg=eagerness();
+  if(o.id==='plan') return {n:'約束あり',e:'📅',d:'会う約束が決まっています。いまはそれを大事にする時期です'};
+  if(o.id==='after') return {n:'会った直後',e:'✨',d:'会ったばかりです。会ったあとの1通がいちばん効きます'};
+  if(trend<=-2 && (!mayHold() || eg.v>=65)) return {n:'少し落ち着いた時期',e:'🍃',d:'前より反応が落ち着いています。責めずに、具体的な提案をひとつ置く時期です'};
+  if(trend<=-2) return {n:'冷却期',e:'🧊',d:'前より反応が落ちています。いまは追いすぎないこと'};
   if(ish>=.72) return {n:'あなた発信が中心',e:'📤',d:'いまは、会話の多くをあなたから始めています'};
   if(ish<=.25 && yq>=.12 && sc.total>=70) return {n:'追い風',e:'🪁',d:'いまは、相手のほうから来ています'};
   if(sp && (sp.r>2.5||sp.r<0.4)) return {n:'テンポのずれ',e:'⏱',d:'二人の返信のテンポが大きくずれています'};
@@ -2123,6 +2244,7 @@ function todayAction(){
   if(o.id==='after') return ['<b>会ったあとの1通を送る。</b>',fmtDay(o.plan.d)+'に会ったばかりです。楽しかったことを1つ名指しして、短く。次の約束は急がなくていい。'];
   if(o.id==='answer') return ['<b>相手からの'+(INVITE_RE.test(o.L.x)?'誘い':'質問')+'に、今日のうちに返す。</b>','最後は相手の「'+shortTx(o.L.x,20)+'」で止まっています。いまは待つ場面ではありません。聞かれたことに答えて、ひとつ返す。'];
   if(o.id==='reply'){
+    if(isClosing(o.L.x) && /おやすみ/.test(o.L.x) && MSGS.slice(-5,-1).some(function(m){return m.who===ME && /おやすみ/.test(m.x)})) return ['<b>今日はここまで。もう返さなくて大丈夫。</b>','二人とも「おやすみ」を言い終えています。次は明日以降、新しい話題から。'];
     if(isClosing(o.L.x)) return ['<b>短く返して、今日はそこまで。</b>','最後は相手の「'+shortTx(o.L.x,16)+'」です。同じくらい短く返せば十分。次は時間を空けて、別の話題から。'];
     if(st.n==='あなたが多めに話す') return ['<b>相手の最後の1通に、いまの半分の長さで返す。</b>','あなたは1回に'+Math.round(S.me.turnLen)+'字、相手は'+Math.round(S.you.turnLen)+'字。長さの差は、そのまま温度差に見えます。'];
     return ['<b>相手の最後の1通に返す。</b>','最後は相手の「'+shortTx(o.L.x,20)+'」です。返事待ちなのはあなたの側。'+(st.n==='受け身どまり'?'返すときに、答えやすい質問をひとつ足すと会話が続きます。':'下の「返信をつくる」に返し方があります。')];
@@ -2133,6 +2255,7 @@ function todayAction(){
     return ['<b>次に会う日程を決めて、前日に確認の1通を。</b>','やり取りは続いています。仮交際の段階では、会う回数を重ねることがいちばんの近道です。'];
   }
   if(couple && (st.n==='冷却期'||st.n==='あなた発信が中心'||st.n==='テンポのずれ')) return ['<b>連投せず、1通にまとめて「話せる時間」をひとつ提案する。</b>','付き合っている相手に「送らない」は逆効果になりやすい。責める言葉は入れず、会う・電話する予定を1つだけ置く。'];
+  if(st.n==='少し落ち着いた時期') return ['<b>次の1通は短く、具体的な提案をひとつ。</b>','前より反応が落ち着いています。'+(o.couple?'付き合っている相手に「送らない」は逆効果になりやすい。':'')+'責める言葉は入れず、会う・話す予定を1つだけ置く。'];
   if(st.n==='冷却期') return ['<b>今日は送らない。</b>','反応が落ちている時期に連絡を足すと、ほぼ悪化します。3日あけて、相手から来るかを見る。来たらそこから組み直せます。'];
   if(st.n==='あなた発信が中心') return ['<b>今日は、こちらから送らない。</b>','いま会話の'+Math.round(ish*100)+'%をあなたが始めています。一度止めると、相手の本当の温度が分かります。'];
   if(st.n==='あなたが多めに話す') return ['<b>次の1通を、半分の長さにする。</b>','あなたは1回に'+Math.round(S.me.turnLen)+'字、相手は'+Math.round(S.you.turnLen)+'字。長さの差は、そのまま温度差に見えます。'];
@@ -2162,8 +2285,9 @@ function renderSummary(){
     '<div class="sline">'+st.d+'</div>'+
     (best&&best[1]>=.6?'<div class="srow2"><span class="mk g">効いている</span><span>'+best[0]+'</span></div>':'<div class="srow2"><span class="mk g">前向きな材料</span><span>'+(POS1||'やり取りは続いています')+'</span></div>')+
     (worst&&worst[1]<.6?'<div class="srow2"><span class="mk b">いちばんの課題</span><span>'+worst[0]+'</span></div>':'')+
-    (function(){ var e=eagerness(); return '<div class="srow2"><span class="mk g" style="background:var(--sunk);color:var(--ink)">相手の前のめり度</span><span><b>'+e.v+'</b>／100（'+e.lab+'）<br><span style="font-size:11.5px;color:var(--faint)">'+e.ev.join('・')+'。噛み合いとは別に、相手がどれだけ自分から動いているか</span></span></div>'; })()+
-    (WINNOTE?'<div class="sline" style="font-size:11.5px;color:var(--faint);margin-top:4px">'+WINNOTE+'</div>':''));
+    (function(){ var e=eagerness(); return '<div class="srow2"><span class="mk g">相手の前のめり度</span><span><b>'+e.v+'</b>／100（'+e.lab+'）<br><span style="font-size:11.5px;color:var(--faint)">'+e.ev.join('・')+'。噛み合いとは別に、相手がどれだけ自分から動いているか</span></span></div>'; })()+
+    (WINNOTE?'<div class="sline" style="font-size:11.5px;color:var(--faint);margin-top:4px">'+WINNOTE+'</div>':'')+
+    (workOn()?'<label class="mtog"><input type="checkbox" '+(WORKX?'checked':'')+' onchange="setWorkX(this.checked)">仕事の連絡（'+workCount()+'通）を除いて計算する</label>':''));
   var ta=todayAction(), o=stance();
   setHt('todayBox','<h4>今日やること、ひとつだけ</h4><p>'+ta[0]+'</p><p style="font-size:13.5px;color:var(--soft)">'+ta[1]+'</p>');
   var rb=document.getElementById('replyBtn');
@@ -2184,7 +2308,7 @@ function pairNotes(){
     if(m[1]==='D') ns.push(['出し方が逆','あなたは気持ちがそのまま出るのに、相手はひねるタイプ。<b>あなたの好意は伝わっているが、相手の好意はあなたに届いていない</b>可能性があります。相手の素っ気なさを額面どおりに取らないこと。']);
     else ns.push(['出し方が逆','あなたはひねる、相手はそのまま出すタイプ。<b>相手はあなたの本心が読めずに不安になっています。</b>一言だけでも素直に出すと、関係が前に進みます。']);
   } else if(m[1]==='T') ns.push(['二人ともひねる','<b>これは危険な組み合わせです。</b>どちらも本心を出さないので、両方が「相手は興味がない」と誤解したまま終わります。どちらかが降りる必要があります。']);
-  else ns.push(['二人とも素直','<b>言葉どおりに受け取って問題ない</b>組み合わせです。誤解が起きにくい。']);
+  else ns.push(['二人とも素直','見立てどおりなら、<b>言葉どおりに受け取りやすい</b>組み合わせかもしれません。']);
   // 量
   var ml=A&&A.S.me.avgLen;
   if(m[2]==='L' && ml && ml<15) ns.push(['文量（実測を優先）','診断では長文タイプですが、<b>この相手には平均'+Math.round(ml)+'字と短く送っています</b>。この相手に対しては、いまの短さが基準です。']);
@@ -2219,7 +2343,10 @@ function renderSignals(){
   } else unk.push(['返信の速さが測れていない',PARSE_INFO.noTime?'貼り付けた内容に時刻が入っていません':'やり取りの往復が足りません']);
   if(R.noRepYou>=1) neg.push(['返事が返ってこなかったことがある','あなたの問いかけ・メッセージに3日以上返事がなかった、または流れた回数 '+R.noRepYou+'回']);
   if(S.me.burst>=2.5 && S.you.burst<1.8) neg.push(['あなたの連投が多い','あなたは1回に平均 '+S.me.burst.toFixed(1)+'通 / 相手 '+S.you.burst.toFixed(1)+'通']);
-  if(S.me.night>=8 && S.me.total && S.me.night/S.me.total>=.15) unk.push(['あなたの深夜の送信が多い','あなたのメッセージの '+S.me.night+'通（'+Math.round(S.me.night/S.me.total*100)+'%）が23時〜5時。不安なときほど夜に送りがちです']);
+  if(S.me.night>=5 && S.me.total && S.me.night/S.me.total>=.12){
+    if(nightY>=.15) unk.push(['二人とも深夜（0〜4時）のやり取りがある','あなた '+S.me.night+'通 / 相手 '+S.you.night+'通。二人の生活リズムなら問題ありません']);
+    else neg.push(['あなたの深夜（0〜4時）の送信が多い','あなた '+S.me.night+'通（'+Math.round(S.me.night/S.me.total*100)+'%）/ 相手 '+S.you.night+'通。相手は深夜にはあまり送っていません']);
+  }
 
   // 起点
   if(iniSide(ish)==='you') pos.push(['相手から会話を始めることが多い','相手 '+R.iniYou+'回 / あなた '+R.iniMe+'回']);
@@ -2246,18 +2373,21 @@ function renderSignals(){
   // 通話
   if(CALLS.length){
     var done=CALLS.filter(function(m){return m.sec>0}), sec=done.reduce(function(a,m){return a+m.sec},0);
-    (done.length?pos:unk).push([done.length?'通話もしている':'通話はつながっていない','通話 '+done.length+'回・合計 '+Math.round(sec/60)+'分'+(CALLS.length>done.length?'（不在・キャンセル '+(CALLS.length-done.length)+'回）':'')+'。通話の記録は文字の分析からは外しています']);
+    var ctr=callTrend();
+    if(ctr && ctr.down) neg.push(['通話が減っている',ctr.txt]);
+    else if(ctr && ctr.recent.n) pos.push(['最近も通話している',ctr.txt]);
+    else (done.length?pos:unk).push([done.length?'通話もしている':'通話はつながっていない','通話 '+done.length+'回・合計 '+Math.round(sec/60)+'分'+(CALLS.length>done.length?'（不在・キャンセル '+(CALLS.length-done.length)+'回）':'')+'。通話の記録は文字の分析からは外しています']);
   }
 
   // 深夜
-  if(nightY>=.25) unk.push(['深夜のやり取りが多い','相手のメッセージの '+Math.round(nightY*100)+'% が23時〜5時。生活リズムによるものか、関係によるものかは分かりません']);
+  if(nightY>=.25) unk.push(['相手の深夜（0〜4時）の送信が多い','相手のメッセージの '+Math.round(nightY*100)+'%。生活リズムによるものか、関係によるものかは分かりません']);
 
   // 変化
-  if(MSGS.length>=24){
-    var hy=periodStats(MSGS,YOU), lb=hy.recent?'直近3週間':'後半', c1=chg('gap',hy.a.gap,hy.b.gap);
+  if(BASE.length>=24){
+    var hy=periodStats(BASE,YOU), lb=hy.recent?'直近3週間':'後半', c1=chg('gap',hy.a.gap,hy.b.gap);
     if(c1>0) pos.push([lb+'、相手の返信が速くなっている',fmtMin(hy.a.gap)+' → '+fmtMin(hy.b.gap)]);
     else if(c1<0) neg.push([lb+'、相手の返信が遅くなっている',fmtMin(hy.a.gap)+' → '+fmtMin(hy.b.gap)]);
-  } else unk.push(['関係の変化は、まだ追えない','やり取りが '+MSGS.length+'通。24通を超えると前半・後半を比較できます']);
+  } else unk.push(['関係の変化は、まだ追えない','やり取りが '+BASE.length+'通。24通を超えると前半・後半を比較できます']);
 
   // 判断できないこと（常に出す）
   unk.push(['相手が他の人にどう返しているかは分からない','このデータは、あなたとのやり取りだけです']);
@@ -2289,13 +2419,20 @@ function loadMem(){
 function noRec(){ try{ return localStorage.getItem('yomitoki:norec')==='1'; }catch(e){ return false; } }
 var FORGOT={};
 function saveMem(obj){
-  if(noRec() || FORGOT[memKey()]) return;
+  if(noRec() || isForgot(memKey())) return;
   try{ localStorage.setItem(memKey(),JSON.stringify(obj)); }catch(e){}
 }
-function setNoRec(on){
+var NRPEND=false;
+function hasRec(){ try{ var m=localStorage.getItem(memKey()), e=localStorage.getItem(evKey()); return !!(m&&JSON.parse(m).note) || !!(e&&JSON.parse(e).length); }catch(_){ return false; } }
+function setNoRec(on,ok){
+  if(on && !ok && hasRec()){ NRPEND=true; renderMemo(); return; }
+  NRPEND=false;
   try{ localStorage.setItem('yomitoki:norec',on?'1':'0'); if(on){ localStorage.removeItem(memKey()); localStorage.removeItem(evKey()); } }catch(e){}
   renderMemo(); renderEv();
 }
+function forgotList(){ try{ return JSON.parse(localStorage.getItem('yomitoki:forgot')||'[]'); }catch(e){ return []; } }
+function isForgot(k){ return !!FORGOT[k] || forgotList().indexOf(k)>=0; }
+function recordAgain(){ try{ localStorage.setItem('yomitoki:forgot',JSON.stringify(forgotList().filter(function(k){return k!==memKey()&&k!==evKey()}))); }catch(e){} delete FORGOT[memKey()]; delete FORGOT[evKey()]; renderMemo(); renderEv(); }
 function renderMemo(){
   var S=A.S,R=A.R,prev=loadMem();
   var sc=scoreReal();
@@ -2307,7 +2444,11 @@ function renderMemo(){
      '<div class="mcell"><span class="k">最後のやり取り</span><span class="v">'+(last.getMonth()+1)+'/'+last.getDate()+'</span></div>'+
      '<div class="mcell"><span class="k">噛み合いスコア</span><span class="v">'+sc.total+'</span></div>'+
      '</div>';
-  if(noRec()||FORGOT[memKey()]){
+  if(NRPEND){
+    h+='<div class="mprev"><b>記録を残さないにすると、この相手の保存済みのメモと出来事を消します。</b><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" style="flex:1" onclick="setNoRec(true,true)">消して、記録をやめる</button><button class="btn g" style="flex:1" onclick="NRPEND=false;renderMemo()">やめる</button></div></div>';
+  } else if(!noRec() && isForgot(memKey()) && !FORGOT[memKey()]){
+    h+='<div class="mprev">この相手は、<b>以前に記録を消した相手</b>です。今回の結果はまだ記録していません。<button class="btn g" style="margin-top:8px" onclick="recordAgain()">この相手を記録する</button></div>';
+  } else if(noRec()||isForgot(memKey())){
     h+='<div class="mprev">'+(FORGOT[memKey()]?'この相手の記録は消しました。':'')+'この端末には<b>記録を残していません</b>。</div>';
   } else if(prev && prev.score!=null && prev.total!==R.total){
     var diff=sc.total-prev.score;
@@ -2319,24 +2460,29 @@ function renderMemo(){
   } else {
     h+='<div class="mprev">この相手を<b>この端末に記録しました</b>。次に履歴を足すと、前回との差分が出ます。</div>';
   }
-  h+='<label class="mtog"><input type="checkbox" '+(noRec()?'checked':'')+' onchange="setNoRec(this.checked)">この端末に記録を残さない（スコア・メモ・出来事）</label>';
+  h+='<label class="mtog"><input type="checkbox" '+((noRec()||NRPEND)?'checked':'')+' onchange="setNoRec(this.checked)">この端末に記録を残さない（スコア・メモ・出来事）</label>';
+  if(!noRec() && !isForgot(memKey()))
   h+='<div class="mnote"><label>この人についてのメモ（任意・端末に保存）</label>'+
      '<textarea id="memoText" placeholder="例）会った回数3回。仕事中はLINEしない。◯◯の話で盛り上がった"></textarea>'+
      '<button class="btn g" style="margin-top:7px" onclick="saveNote()">メモを保存</button></div>';
   setHt('memoBox',h);
   var mt=document.getElementById('memoText');
   if(mt && prev && prev.note) mt.value=prev.note;
-  saveMem({score:sc.total,total:R.total,date:(new Date()).getMonth()+1+'/'+(new Date()).getDate(),note:(prev&&prev.note)||''});
+  var eg0=eagerness();
+  saveMem({score:sc.total,total:R.total,date:(new Date()).getMonth()+1+'/'+(new Date()).getDate(),ts:Date.now(),note:(prev&&prev.note)||'',name:YOU,eager:eg0.v,goal:GOAL.t});
 }
 function forgetPartner(btn){
   if(btn.dataset.armed!=='1'){ btn.dataset.armed='1'; btn.textContent='もう一度押すと、この相手の記録（スコア・メモ・出来事）を消します'; return; }
   try{ localStorage.removeItem(memKey()); localStorage.removeItem(evKey()); }catch(e){}
   FORGOT[memKey()]=1; FORGOT[evKey()]=1;
+  try{ var fl=forgotList(); [memKey(),evKey()].forEach(function(k){ if(fl.indexOf(k)<0) fl.push(k); }); localStorage.setItem('yomitoki:forgot',JSON.stringify(fl)); }catch(e){}
+  renderRecList();
   btn.dataset.armed=''; btn.textContent='この相手の記録を消しました';
   setHt('memoBox','<div class="mprev">この相手の記録を消しました。</div>'); renderEv();
 }
 function saveNote(){
   var mt=document.getElementById('memoText'); if(!mt) return;
+  if(noRec()||isForgot(memKey())) return;
   var cur=loadMem()||{};
   cur.note=mt.value;
   saveMem(cur);
@@ -2391,7 +2537,7 @@ function scoreReal(){
   var av=R.runs/Math.max(1,sessions(WMSGS.length?WMSGS:MSGS));
   var con=Math.round(Math.max(0,Math.min(1,(av-1.5)/3))*15);
   rows.push(['会話の続き方',con,15,'会話が途切れる（6時間以上あく）までに、平均 '+av.toFixed(1)+'回の受け答え',
-    con>=12?'一度始まると会話が続いています':(con>=6?'続くこともあれば、一往復で終わることもあります':'会話は一往復で終わりがち。質問をひとつ足すだけで変わります')]);
+    con>=12?'一度始まると会話が続いています':(con>=6?'続くこともあれば、一往復で終わることもあります':('会話は一往復で終わりがち。'+((S.me.text&&S.me.q/S.me.text<.15)?'質問をひとつ足すだけで変わります':'質問はできているので、相手の話に乗る返しを増やすと続きます')))]);
   // こちらの負担（10）
   var relMe=R.iniMe/Math.max(1,R.iniYou+R.iniMe);
   var bur=Math.round((1-relMe)*10);
@@ -2403,16 +2549,41 @@ function scoreReal(){
 }
 
 /* ============ RENDER ============ */
-var MSGS=[],CALLS=[],NAMES=[],ME='',YOU='',A=null,MT='',YT='',WMSGS=[],WINNOTE='',POS1='';
+var MSGS=[],CALLS=[],NAMES=[],ME='',YOU='',A=null,MT='',YT='',WMSGS=[],WINNOTE='',POS1='',BASE=[],SENTFAIL='',FEW=false;
+/* 仕事の連絡（業務っぽいメッセージ）は、恋愛の分析から外せる */
+var WORK_RE=/(資料|会議|MTG|ミーティング|打ち合わせ|確認お願いします|ご確認|承知(しました|です|いたしました)|議事録|共有します|共有しました|対応お願いします|先方|案件|締め切り|〆切|納期|稟議|出社|退勤|直帰|定例|進捗|見積|クライアント)/;
+var WORKX=true;
+function isWork(m){ return !/^\[/.test(m.x) && WORK_RE.test(m.x); }
+function workCount(){ return MSGS.filter(isWork).length; }
+function workOn(){ var n=workCount(); return GOAL.fam!=='work' && n>=3 && (/職場|同僚|会社|仕事|上司|部署|同期|後輩/.test(REL) || n>=8); }
+function baseMsgs(){ if(!WORKX||!workOn()) return MSGS; var b=MSGS.filter(function(m){return !isWork(m)}); return b.length>=10?b:MSGS; }
+function setWorkX(on){ WORKX=on; render(true); }
+function rangeLab(){ var W=WMSGS.length?WMSGS:MSGS; if(!W.length) return ''; var a=W[0].t,b=W[W.length-1].t; return (a.getMonth()+1)+'/'+a.getDate()+'〜'+(b.getMonth()+1)+'/'+b.getDate()+(W.length<MSGS.length?'（直近）':'（全期間）'); }
+/* 通話の変化：直近3週間とそれより前（1週間あたり）で比べる */
+function callTrend(){
+  if(!CALLS.length||MSGS.length<2) return null;
+  var sp=periodSplit(MSGS); if(!sp.cut) return null;
+  var t0=MSGS[0].t, t1=new Date(Math.max(MSGS[MSGS.length-1].t, CALLS[CALLS.length-1].t));
+  function seg(a,from,to){ var d=Math.max(1,(to-from)/86400000/7), done=a.filter(function(m){return m.sec>0}); return {n:done.length,miss:a.length-done.length,sec:done.reduce(function(x,m){return x+m.sec},0),you:done.filter(function(m){return m.who===YOU}).length,pw:done.length/d}; }
+  var B=CALLS.filter(function(m){return m.t<sp.cut}), R2=CALLS.filter(function(m){return m.t>=sp.cut});
+  var b=seg(B,t0,sp.cut), r=seg(R2,sp.cut,t1);
+  var down = b.n>=2 && r.pw < b.pw*0.5;
+  var txt='それより前 '+b.n+'回・'+Math.round(b.sec/60)+'分（相手から '+b.you+'回'+(b.miss?'・不在 '+b.miss+'回':'')+'）→ 直近 '+r.n+'回・'+Math.round(r.sec/60)+'分（相手から '+r.you+'回'+(r.miss?'・不在 '+r.miss+'回':'')+'）';
+  return {down:down,before:b,recent:r,txt:txt};
+}
 /* 相手の名前はタップで伏せられる（画面の覗き見対策） */
 function maskOn(){ try{ return localStorage.getItem('yomitoki:mask')==='1'; }catch(e){ return false; } }
-function dn(n){ n=n||YOU; if(!maskOn()) return n; return n.charAt(0)+'◯◯'; }
-function toggleMask(){ try{ localStorage.setItem('yomitoki:mask',maskOn()?'0':'1'); }catch(e){} setTx('rTitle',dn()+' とのやり取り'); setTx('repWho',dn()); var mn=document.querySelector('#memoBox .mn'); if(mn) mn.textContent=dn(); if(document.getElementById('reply').classList.contains('on')){ renderCtx(); renderLast(); } }
+function dn(n){ n=n||YOU; if(!maskOn()) return n; if(n===ME) return 'あなた'; return '◯◯◯'; }
+function toggleMask(){ try{ localStorage.setItem('yomitoki:mask',maskOn()?'0':'1'); }catch(e){}
+  var cur=document.querySelector('.sc.on'), id=cur?cur.id:'result';
+  if(A){ render(true); if(document.getElementById('report').classList.contains('on')||id==='report') renderReport(); }
+  if(id==='reply'){ renderCtx(); renderLast(); if(LASTMODE==='sit') applySit(); else if(CURSCN>=0) pickScn(CURSCN,true); }
+  go(id); }
 /* 曜日×時間帯（相手の送信）。事実だけを出し、解釈はしない */
 /* 時間帯は全期間で数える（窓で切ると少なすぎる） */
 function gridAll(){
   var grid=[]; for(var w=0;w<7;w++) grid.push([0,0,0,0]); var n=0;
-  MSGS.forEach(function(m){ if(m.who!==YOU) return; n++; var h=m.t.getHours(), b=h>=6&&h<12?0:(h>=12&&h<18?1:(h>=18&&h<23?2:3)); grid[m.t.getDay()][b]++; });
+  (WMSGS.length?WMSGS:MSGS).forEach(function(m){ if(m.who!==YOU) return; n++; var h=m.t.getHours(), b=h>=6&&h<12?0:(h>=12&&h<18?1:(h>=18&&h<23?2:3)); grid[m.t.getDay()][b]++; });
   return {g:grid,n:n};
 }
 function renderGrid(){
@@ -2420,7 +2591,7 @@ function renderGrid(){
   for(var w=0;w<7;w++) for(var b=0;b<4;b++) mx=Math.max(mx,g[w][b]);
   var h='<table class="wgrid"><tr><th></th>'+bands.map(function(b){return '<th>'+b+'</th>'}).join('')+'</tr>';
   order.forEach(function(w){ h+='<tr><th>'+WD[w]+'</th>'; for(var b=0;b<4;b++){ var v=g[w][b], a=v?(0.15+0.85*v/mx):0; h+='<td style="background:rgba(226,103,79,'+a.toFixed(2)+')">'+(v||'')+'</td>'; } h+='</tr>'; });
-  h+='</table><p class="note" style="margin:6px 0 0">朝 6〜12時／昼 12〜18時／夜 18〜23時／深夜 23〜6時。相手の送信 '+tot+'通の分布です。</p>';
+  h+='</table><p class="note" style="margin:6px 0 0">朝 6〜12時／昼 12〜18時／夜 18〜23時／深夜 23〜6時。'+rangeLab()+'の相手の送信 '+tot+'通の分布です。</p>';
   var we=0,ev=0,wd=0; for(var w2=0;w2<7;w2++) for(var b2=0;b2<4;b2++){ if(w2===0||w2===6) we+=g[w2][b2]; else wd+=g[w2][b2]; if(b2>=2) ev+=g[w2][b2]; }
   var f=[];
   if(tot>=15){
@@ -2465,15 +2636,16 @@ function youDesc(){
   if(S.you.total && S.you.sticker/S.you.total>=.12) p.push('<b>スタンプをよく使います</b>（'+S.you.sticker+'回）。');
   return p.join('');
 }
-function render(){
-  WMSGS=winMsgs(); STC=null; TOPIC=undefined;
+function render(stay){
+  BASE=baseMsgs(); WMSGS=[]; WMSGS=winMsgs(); STC=null; TOPIC=undefined;
   A=analyze(WMSGS,ME,YOU);
   var S=A.S,R=A.R;
   MT=four(S.me); YT=four(S.you);
-  WINNOTE = WMSGS.length<MSGS.length ? '長い履歴なので、直近4週間（'+(WMSGS[0].t.getMonth()+1)+'/'+WMSGS[0].t.getDate()+'〜・'+WMSGS.length+'通）で読んでいます。全期間は'+MSGS.length+'通。' : '';
+  WINNOTE = WMSGS.length<BASE.length ? '長い履歴なので、直近3週間（'+(WMSGS[0].t.getMonth()+1)+'/'+WMSGS[0].t.getDate()+'〜・'+WMSGS.length+'通）で読んでいます。全期間は'+BASE.length+'通。時間帯の表・二人のリズムも同じ範囲です。' : '';
 
   setTx('rTitle',dn()+' とのやり取り');
   setTx('rMeta',R.total+'通 / '+R.days+'日');
+  var fs0=document.querySelectorAll('#result details.fold'); for(var i0=0;i0<fs0.length;i0++) fs0[i0].style.display='';
 
   setTx('yAv', (PTYPE&&CT[PTYPE])?CT[PTYPE].e:'💬');
   var lk=document.getElementById('lockSect'); if(lk) lk.style.display=PAID?'none':'';
@@ -2487,7 +2659,8 @@ function render(){
   var yq=S.you.text?S.you.q/S.you.text:0, ye=S.you.text?S.you.emoji/S.you.text:0;
   setHt('yFacts',
     fact('ふだんの返信の速さ',mins(S.you.gap),'あなたへの返信の速さ')+
-    fact('1通あたりの文字数',Math.round(S.you.avgLen)+'<small>字</small>','')+
+    fact('1通あたりの文字数',Math.round(S.you.avgLen)+'<small>字</small>','1通ずつ数えた平均')+
+    fact('1回に書く量',Math.round(S.you.turnLen)+'<small>字</small>','連投をまとめた1回あたり')+
     fact('話しかけてくる割合',pct(R.iniYou/Math.max(1,R.iniYou+R.iniMe)),'会話を始めるのはどちらか')+
     fact('質問してくる割合',pct(yq),'あなたへの関心の向け方')+
     fact('連続で送る数',S.you.burst.toFixed(1)+'<small>通</small>','一度に何通送るか')+
@@ -2502,11 +2675,12 @@ function render(){
   var mq=S.me.text?S.me.q/S.me.text:0;
   setHt('mFacts',
     fact('あなたのふだんの速さ',mins(S.me.gap),'')+
-    fact('あなたの文字数',Math.round(S.me.avgLen)+'<small>字</small>','')+
+    fact('あなたの1通あたり',Math.round(S.me.avgLen)+'<small>字</small>','1通ずつ数えた平均')+
+    fact('あなたの1回に書く量',Math.round(S.me.turnLen)+'<small>字</small>','連投をまとめた1回あたり')+
     fact('あなたから話しかける',pct(R.iniMe/Math.max(1,R.iniYou+R.iniMe)),'')+
     fact('あなたの質問率',pct(mq),'')+
     fact('あなたが1回に送る数',S.me.burst.toFixed(1)+'<small>通</small>',S.me.burst>=2.5?'連投が多め':'')+
-    fact('あなたの深夜の送信',S.me.night+'<small>通</small>','23時〜5時'));
+    fact('あなたの深夜の送信',S.me.night+'<small>通</small>','0時〜4時'));
 
   // comparison
   function bar(label,a,b,fmt){
@@ -2515,10 +2689,11 @@ function render(){
       '<div class="tr"><i class="me" style="width:'+(a/tot*100)+'%"></i><i class="yo" style="width:'+(b/tot*100)+'%"></i></div></div>';
   }
   var cb=document.getElementById('cmpBox');
-  cb.innerHTML='<h4>どちらが、どれだけ</h4>'+
+  cb.innerHTML='<h4>どちらが、どれだけ</h4><p class="note" style="margin:0 0 6px">範囲：'+rangeLab()+'</p>'+
     bar('話しかける回数',R.iniMe,R.iniYou,function(v){return v+'回'})+
     bar('送った通数',S.me.total,S.you.total,function(v){return v+'通'})+
-    bar('1通の長さ',Math.round(S.me.avgLen),Math.round(S.you.avgLen),function(v){return v+'字'})+
+    bar('1通あたりの文字数',Math.round(S.me.avgLen),Math.round(S.you.avgLen),function(v){return v+'字'})+
+    bar('1回に書く量（連投まとめ）',Math.round(S.me.turnLen),Math.round(S.you.turnLen),function(v){return v+'字'})+
     '<div class="lg"><span><i style="background:var(--data)"></i>あなた</span><span><i style="background:var(--brand)"></i>'+dn()+'</span></div>';
 
   // score
@@ -2547,7 +2722,7 @@ function render(){
   setTx('pwLab',GOAL.lab);
   setTx('pwScoreNote','やり取りの実測から出した、噛み合いの度合い');
   setTx('repWho',dn());
-  setTx('lockTxt','前半と後半で、'+YOU+'の返信の速さ（いまは'+fmtMin(S.you.gap)+'）と長さ（'+Math.round(S.you.avgLen)+'字）がどう変わったか。相手の「ふだん」と比べたときのズレ。この相手にやっていいこと・やらないほうがいいこと……');
+  setTx('lockTxt','前半と後半で、'+dn()+'の返信の速さ（いまは'+fmtMin(S.you.gap)+'）と長さ（'+Math.round(S.you.avgLen)+'字）がどう変わったか。相手の「ふだん」と比べたときのズレ。この相手にやっていいこと・やらないほうがいいこと……');
 
 
   renderSignals();
@@ -2556,10 +2731,18 @@ function render(){
   renderBase();
   renderGrid();
   renderMemo();
+  if(FEW) fewMode();
 
-  go('result');
+  if(!stay) go('result');
 }
 
+/* 6〜9通：分析は出さず、返信案だけ参考程度に */
+function fewMode(){
+  setHt('summBox','<div class="sline"><b>まだ'+MSGS.length+'通</b>なので、傾向の分析は出しません（10通から出ます）。<br>返信案だけ、<b>参考程度に</b>使えます。</div>');
+  setHt('todayBox','<h4>いまできること</h4><p><b>相手の最後の1通に返す案を見る。</b></p><p style="font-size:13.5px;color:var(--soft)">やり取りが増えたら、もう一度貼り付けると分析が出ます。</p>');
+  var rb=document.getElementById('replyBtn'); if(rb){ rb.textContent='返信案を見る（参考）'; rb.className='btn'; }
+  var fs=document.querySelectorAll('#result details.fold'); for(var i=0;i<fs.length;i++) if(i>0) fs[i].style.display='none';
+}
 /* ============ REPLY ============ */
 var SCNE={'約束の前':'📅','デートのあと':'✨','映画':'🎬','通話':'📞','おやすみ':'🌙','不安を伝える':'🫶','誘う':'🍽','久しぶり':'🕊','既読スルー後':'⏳','謝る':'🙏','盛り上げる':'🎈','お礼':'💐',
  '来店に誘う':'🥂','打ち合わせに誘う':'📅','依頼する':'📨','催促する':'⏳','相談にのる':'🫧'};
@@ -2568,6 +2751,7 @@ function buildScn(){
   var ks=GOAL.scn.slice(), o=stance();
   if(o.id==='plan' && ks.indexOf('約束の前')<0) ks.unshift('約束の前');
   if(o.id==='after' && ks.indexOf('デートのあと')<0) ks.unshift('デートのあと');
+  if(GOAL.fam==='love' && ks.indexOf('デートのあと')<0) ks.push('デートのあと');
   SCN=ks.map(function(k){return {k:k,e:SCNE[k]||'💬'}});
   var h='';
   for(var i=0;i<SCN.length;i++) h+='<button onclick="pickScn('+i+')" id="sc'+i+'"><span class="e">'+SCN[i].e+'</span>'+SCN[i].k+'</button>';
@@ -2631,8 +2815,9 @@ function pickScn(i,auto){
     {k:'C スタンプで',m:'（スタンプ1つで返す）',w:'相手がスタンプで終わらせたなら、<b>こちらもスタンプで</b>十分です。'}
    ],
    '約束の前':[
-    {k:'A 確認する',m:(o.plan?(o.plan.days===1?'明日':fmtDay(o.plan.d).replace(/（.）/,''))+'、':'')+'◯時に◯◯で大丈夫かな？\n楽しみにしてる',ms:(o.plan?(o.plan.days===1?'明日':fmtDay(o.plan.d).replace(/（.）/,''))+'、':'')+'◯時に◯◯で大丈夫ですか？\n楽しみにしています',w:'<b>時間と場所の確認</b>に「楽しみ」を添える。確認だけで終わらせない一言が効きます。'},
+    {k:'A 確認する',m:(o.plan?(o.plan.days===1?'明日':fmtDay(o.plan.d).replace(/（.）/,''))+'、':'')+'◯時に◯◯で大丈夫かな？\n楽しみにしてる',ms:(o.plan?(o.plan.days===1?'明日':fmtDay(o.plan.d).replace(/（.）/,''))+'、':'')+'◯時に◯◯で大丈夫ですか？\n楽しみにしています',w:(function(){ var d=planDetail(o.plan); return (d.tm||d.pl)?'履歴にあった<b>'+[d.tm,d.pl].filter(Boolean).join('・')+'</b>を入れています。':''; })()+'<b>時間と場所の確認</b>に「楽しみ」を添える。確認だけで終わらせない一言が効きます。'},
     {k:'B 楽しみを伝える',m:'楽しみにしてる！\n気をつけて来てね',ms:'楽しみにしています！\nお気をつけて来てください',w:'<b>短く、前向きに</b>。会う前は重い話をしないこと。'},
+    (function(){ var d=planDetail(o.plan); return (d.tm&&d.pl)?{k:'C 当日に',m:'（当日）着いたら連絡するね！',ms:'（当日）着いたらご連絡しますね！',w:'時間と場所は決まっているので、<b>当日の一言</b>で十分です。'}:null; })() ||
     {k:'C 決まっていなければ',m:'時間と場所、◯時に◯◯とかどう？\n他がよければ合わせるよ',ms:'時間と場所、◯時に◯◯あたりはどうですか？\nご希望があれば合わせます',w:'まだ決まっていないなら、<b>こちらから具体的に1つ出す</b>。往復が1回減ります。'}
    ],
    'デートのあと':[
@@ -2697,6 +2882,12 @@ function pickScn(i,auto){
      {k:'B 行き先から',m:'前にお話しされていた◯◯、よかったら次に一緒に行きませんか？',w:'<b>相手が話していたことを行き先にする</b>と、話を覚えていることも伝わります。'},
      {k:'C 短い時間で',m:'お忙しければ、お茶だけでも嬉しいです',w:'<b>負担の軽い形</b>も1つ用意しておくと、断られにくくなります。'}];
   }
+  if(isLDR()){
+    sets['誘う']=[
+     {k:'A 通話の約束',m:'今週どこかで電話できる日ある？\nゆっくり声聞きたい',ms:'今週どこかで、お電話できる日はありますか？\nゆっくり声が聞きたいです',w:'遠距離では<b>「会う」の代わりに話す予定</b>をひとつ置くのがいちばん効きます。'},
+     {k:'B 次に会う日の相談',m:'次に会えるの、いつにしよっか？\nカレンダー見てみる',ms:'次に会えるのはいつにしましょうか？\n予定を見てみます',w:'<b>次に会う日が決まっている</b>だけで、離れている間の不安がかなり減ります。'},
+     {k:'C 会ったらしたいこと',m:'次会ったら行きたいとこ考えてた\nどこがいい？',ms:'次に会ったら行きたいところを考えていました\nどこがいいですか？',w:'<b>先の楽しみを一緒に作る</b>。予定の話は前向きなまま終わります。'}];
+  }
   if(o.couple){
     sets['既読スルー後']=[
      {k:'A 1通だけ軽く',m:'今日もおつかれさま\n落ち着いたら声聞きたいな',ms:'今日もおつかれさまでした\n落ち着いたらお話しできたら嬉しいです',w:'付き合っている相手に<b>何日も空ける必要はありません</b>。責めずに、1通だけ。'},
@@ -2714,8 +2905,8 @@ function pickScn(i,auto){
     arr=[arr[0]];
     pre='<div class="quo">最後に送ったのはあなたで、まだ<b>相手のふだんの返信の範囲</b>です（目安 '+fmtMin(o.waitMin)+'）。追撃の案は、それを過ぎてから出します。</div>';
   }
-  arr=notSent(arr);
-  setHt('sugBox',pre+sugHTML(arr,'mg')+styleNote()+remainLabel());
+  arr=notSent(semFilter(arr));
+  setHt('sugBox',pre+sugHTML(arr,'mg')+paidExtra(arr)+styleNote()+remainLabel());
   document.getElementById('repNote').style.display='block';
   if(!auto) toSug();
 }
@@ -2783,7 +2974,10 @@ function unlock(){
 }
 function afterUnlock(){ setHt('betaNote',''); renderReport(); }
 function toDetail(){ if(PAID) renderReport(); else openPaywall(''); }
+var PWFROM='result';
+function pwBack(){ go(PWFROM||'result'); }
 function openPaywall(head){
+  var cur=document.querySelector('.sc.on'); PWFROM=(cur&&cur.id!=='paywall')?cur.id:'result';
   setHt('pwHead',head||''); setHt('betaNote','');
   var left=Math.max(0,3-usedReplies()), fb=document.getElementById('freeBtn');
   if(fb){ fb.style.display=left>0?'block':'none'; fb.textContent='まずは返信案を無料で使う（あと'+left+'回）'; }
@@ -2798,13 +2992,14 @@ function buildDoDont(){
   var S=A.S,R=A.R,dos=[],ng=[];
   var relMe=R.iniMe/Math.max(1,R.iniMe+R.iniYou);
   // 実測から
-  if(lenSide(S.me.avgLen,S.you.avgLen)==='youShort'){
-    dos.push('<b>文の長さを、相手に寄せてみる。</b>相手は'+Math.round(S.you.avgLen)+'字、あなたは'+Math.round(S.me.avgLen)+'字');
+  var lsd=lenSide(S.me.turnLen,S.you.turnLen), lv2='1回に書く量（連投まとめ）：相手 '+Math.round(S.you.turnLen)+'字／あなた '+Math.round(S.me.turnLen)+'字';
+  if(lsd==='youShort'){
+    dos.push('<b>1回に書く量を、相手に寄せてみる。</b>'+lv2);
     ng.push('長文で送る。<b>読む負担がそのまま返信の遅さになります</b>');
-  } else if(lenSide(S.me.avgLen,S.you.avgLen)==='youLong'){
-    dos.push('<b>もう少しだけ書いてみる。</b>相手のほうが'+Math.round(S.you.avgLen)+'字と長く、あなたの短さが素っ気なく映ります');
-  } else dos.push('<b>いまの長さのままでいい。</b>二人の文量は近く、無理のないやり取りです');
-  var sp3=spdCmp(S), o3=stance(), hold=!(o3.couple||o3.id==='plan'||o3.id==='after'||o3.id==='answer'||o3.id==='reply');
+  } else if(lsd==='youLong'){
+    dos.push('<b>もう少しだけ書いてみる。</b>'+lv2+'。あなたの短さが素っ気なく映ることがあります');
+  } else dos.push('<b>いまの長さのままでいい。</b>'+lv2+'で、近い量です');
+  var sp3=spdCmp(S), hold=mayHold();
   if(sp3 && sp3.r>2 && S.you.gap>=45 && hold){
     dos.push('<b>返す前に、少し置いてみる。</b>相手'+fmtMin(S.you.gap)+'に対し、あなたは'+fmtMin(S.me.gap));
     ng.push('すぐ返す・追撃する。<b>速度差は温度差に見えます</b>');
@@ -2813,16 +3008,16 @@ function buildDoDont(){
   }
   if(iniSide(relMe)==='me'){ if(hold) dos.push('<b>一度こちらから止めて、相手の出方を見てみる</b>'); else dos.push('<b>話題を振るときは、相手が答えやすい質問をひとつだけ</b>'); ng.push('会話を始め続ける。いまあなたが<b>'+Math.round(relMe*100)+'%</b>を担っています'); }
   else if(iniSide(relMe)==='you') dos.push('<b>たまにはこちらからも振ってみる。</b>いまは相手任せになっています');
-  if(S.you.text && S.you.q/S.you.text<=.05 && !(S.me.text && S.me.q/S.me.text<.1)) ng.push('質問を重ねる。<b>相手から質問が返ってきていない</b>ので、続けると尋問のように感じられることがあります');
+  if(S.you.text && S.you.q/S.you.text<=.05 && S.me.text && S.me.q/S.me.text>=.25) ng.push('質問を重ねる。<b>相手から質問が返ってきていない</b>ので、続けると尋問のように感じられることがあります');
   if(S.you.total && S.you.sticker/S.you.total>=.12) dos.push('<b>スタンプで締めてみる。</b>相手がよく使う返し方に合います');
   if(S.you.burst>=2) dos.push('<b>こちらも小分けに送ってみる。</b>相手は一度に'+S.you.burst.toFixed(1)+'通に分けて送ってきます');
   else if(S.me.burst>=2) ng.push('連投する。<b>相手は1通にまとめる</b>タイプです');
   // 相手の連絡タイプが分かっていれば足す
   if(PTYPE&&CT[PTYPE]){
-    if(PTYPE[1]==='T'){ dos.push('<b>素っ気なさだけで判断しない。</b>このタイプは好意があってもひねることがあります'); ng.push('一通の遅さや短さで<b>結論を出す</b>'); }
-    else dos.push('<b>言葉どおりに受け取りやすい相手。</b>気持ちがそのまま出るタイプです');
+    if(PTYPE[1]==='T'){ dos.push('<b>素っ気なさだけで判断しない。</b>見立てどおりなら、ひねって返すタイプかもしれません'); ng.push('一通の遅さや短さで<b>結論を出す</b>'); }
+    else dos.push('<b>見立てどおりなら、言葉どおりに受け取りやすい相手かもしれません。</b>');
     if(PTYPE[3]==='C') ng.push('他の人への接し方と比べる。<b>相手によって別人になるタイプ</b>です');
-    if(PTYPE[0]==='S') dos.push('<b>返信の遅さだけで判断しない。</b>もともと寝かせるタイプの可能性があります');
+    if(PTYPE[0]==='S') dos.push('<b>返信の遅さだけで判断しない。</b>あなたの見立てどおりなら、もともと寝かせるタイプの可能性があります');
     if(PTYPE[0]==='Q'&&S.you.gap>60) ng.push('いまの遅さを放置する。<b>本来すぐ返す人</b>なので、ここには意味があります');
   } else {
     ng.push('決めつける。<b>相手の連絡タイプが分かるまでは、これらは「あなたへの接し方」の話</b>です');
@@ -2938,7 +3133,7 @@ function renderReport(){
     }
     else ob.push(['','返信の速さは<b>ほぼ釣り合っています</b>。無理に合わせにいかなくていい、心地よい距離です。']);
   }
-  if(iniSide(ish)==='me') ob.push(['w','会話を始めるのは<b>あなたが'+Math.round(ish*100)+'%</b>。偏っています。一度こちらから止めて、<b>相手が来るかどうかを見る</b>価値があります。来なければ、関係の性質が分かります。']);
+  if(iniSide(ish)==='me') ob.push(['w','会話を始めるのは<b>あなたが'+Math.round(ish*100)+'%</b>。偏っています。'+(mayHold()?'一度こちらから止めて、<b>相手が来るかどうかを見る</b>価値があります。来なければ、関係の性質が分かります。':'いまは止める時期ではないので、<b>話題を振るときは答えやすい質問をひとつだけ</b>に。')]);
   else if(iniSide(ish)==='you') ob.push(['','会話は<b>相手から始まることが多い（'+Math.round((1-ish)*100)+'%）</b>。関心が向いているサインのひとつです。受け身になりすぎないことだけ気をつけたい。']);
   else ob.push(['','会話の起点は<b>ほぼ半々</b>。対等なやり取りができています。']);
   if(S.you.turnLen&&S.me.turnLen){
@@ -2948,22 +3143,22 @@ function renderReport(){
   if(yq>=.25) ob.push(['','相手の<b>'+Math.round(yq*100)+'%</b>のメッセージに質問が入っています。<b>会話を続ける意思があります</b>。']);
   else if(yq>=.12) ob.push(['','相手の<b>'+Math.round(yq*100)+'%</b>のメッセージに質問が入っています。ときどき聞き返してくれる、ふつうの水準です。']);
   else if(yq<=.04 && S.you.text>10) ob.push(['w','相手からの質問が<b>ほとんどありません（'+Math.round(yq*100)+'%）</b>。受け身か、こちらに関心が向いていないかのどちらか。<b>こちらの質問に答えるかどうか</b>で見分けられます。']);
-  if(nightY>=.3) ob.push(['','相手のメッセージの<b>'+Math.round(nightY*100)+'%が深夜帯</b>。生活リズムによるものかもしれません。理由はこのデータからは分かりません。']);
+  if(nightY>=.3) ob.push(['','相手のメッセージの<b>'+Math.round(nightY*100)+'%が深夜帯（0〜4時）</b>。生活リズムによるものかもしれません。理由はこのデータからは分かりません。']);
   if(S.you.burst>=2.2) ob.push(['','相手は<b>一度に平均'+S.you.burst.toFixed(1)+'通</b>送ってきます。思いついたことをそのまま出すタイプ。<b>こちらも小分けにすると合います</b>。']);
   else if(S.you.burst<=1.2&&S.me.burst>=2) ob.push(['w','相手は<b>1通にまとめて送る</b>のに、あなたは連投しています。通知が連続すると負担になります。']);
   setHt('rpObs',ob.map(function(o){return '<div class="ob '+o[0]+'">'+o[1]+'</div>'}).join(''));
 
   // --- trend ---（日付で「直近3週間」と「それより前」。変化の判定は chg() で結果画面と共通）
-  if(MSGS.length>=24){
+  if(BASE.length>=24){
     document.getElementById('rpTrendSect').style.display='flex';
-    var hy=periodStats(MSGS,YOU), hm=periodStats(MSGS,ME), mid2=hy.i;
+    var hy=periodStats(BASE,YOU), hm=periodStats(BASE,ME), mid2=hy.i;
     var ia=hy.a.inis?hy.a.ini/hy.a.inis:0, ib=hy.b.inis?hy.b.ini/hy.b.inis:0;
     var cg=chg('gap',hy.a.gap,hy.b.gap), cl=chg('len',hy.a.len,hy.b.len), ci=chg('pct',ia,ib);
     function cc(v){ return v>0?'up':(v<0?'dn':'fl'); }
     function fd(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
     setTx('rpTrendH', hy.recent?'直近3週間と、それより前で比べると':'前半と後半で、どう変わったか');
-    var per='<div class="perlab"><span><b>'+(hy.recent?'それより前':'前半')+'</b> '+fd(MSGS[0].t)+'〜'+fd(MSGS[mid2-1].t)+'（'+mid2+'通）</span>'+
-            '<span class="ar2">→</span><span><b>'+(hy.recent?'直近':'後半')+'</b> '+fd(MSGS[mid2].t)+'〜'+fd(MSGS[MSGS.length-1].t)+'（'+(MSGS.length-mid2)+'通）</span></div>';
+    var per='<div class="perlab"><span><b>'+(hy.recent?'それより前':'前半')+'</b> '+fd(BASE[0].t)+'〜'+fd(BASE[mid2-1].t)+'（'+mid2+'通）</span>'+
+            '<span class="ar2">→</span><span><b>'+(hy.recent?'直近':'後半')+'</b> '+fd(BASE[mid2].t)+'〜'+fd(BASE[BASE.length-1].t)+'（'+(BASE.length-mid2)+'通）</span></div>';
     var rows=per+'<div class="tr2"><span class="k">相手の返信の速さ</span><span class="v '+cc(cg)+'">'+
       (hy.a.gap&&hy.b.gap?fmtMin(hy.a.gap)+' → '+fmtMin(hy.b.gap):'—')+'</span></div>'+
       '<div class="tr2"><span class="k">相手の1通の長さ</span><span class="v '+cc(cl)+'">'+
@@ -3025,15 +3220,47 @@ function renderCtx(){
        (m.t.getMonth()+1)+'/'+m.t.getDate()+'</span><span class="cm">'+tx.replace(/</g,'&lt;')+'</span></div>';
   }
   if(MSGS.length>3) h+='<button class="more2" onclick="moreCtx()">'+(CTXN>3?'閉じる −':'もっと見る ＋')+'</button>';
-  if(ADD) h+='<div class="cnew"><b>追加した内容</b><br>'+ADD.replace(/</g,'&lt;')+'</div>';
+  if(ADD) h+='<div class="cnew"><b>追加した内容</b>（上の流れに入れて読み直しました）<br>'+(maskOn()?ADD.split(YOU).join(dn()):ADD).replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</div>';
   setHt('ctxBox',h);
+}
+function normName(x){ return (x||'').replace(/[\s　]/g,'').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u200d]/gu,''); }
+function whoOf(nm){
+  var n=normName(nm), me=normName(ME), you=normName(YOU); if(!n) return null;
+  if(/^(自分|私|わたし|俺|僕|あなた)$/.test(n)) return ME;
+  if(/^(相手|彼|彼女|あの人)$/.test(n)) return YOU;
+  function hit(a){ return a && (n===a || a.indexOf(n)===0 || n.indexOf(a)===0 || (n.length>=2 && a.indexOf(n)>=0)); }
+  if(hit(me)) return ME; if(hit(you)) return YOU; return null;
+}
+/* 追加の貼り付けを分解：「HH:MM 名前: 本文」「名前: 本文」「名前：本文」「HH:MM<TAB>名前<TAB>本文」 */
+function parseAdd(text){
+  var out=[], now=new Date(), cur=null;
+  text.split('\n').forEach(function(raw){
+    var l=raw.replace(/\r/g,''); if(!l.trim()) return;
+    var tm=null, mm, who=null, body=l.trim();
+    if((mm=body.match(/^(\d{1,2}):(\d{2})[\s\t]+([\s\S]*)$/))){ tm=[+mm[1],+mm[2]]; body=mm[3]; }
+    if((mm=body.match(/^([^\t:：]{1,24})\t([\s\S]+)$/)) && whoOf(mm[1])){ who=whoOf(mm[1]); body=mm[2]; }
+    else if((mm=body.match(/^([^:：]{1,24})\s*[:：]\s*([\s\S]+)$/)) && whoOf(mm[1])){ who=whoOf(mm[1]); body=mm[2]; }
+    body=body.replace(/^"|"$/g,'').trim();
+    if(who||tm||!cur){
+      var t=now; if(tm){ t=new Date(now.getFullYear(),now.getMonth(),now.getDate(),tm[0],tm[1]); if(t>now) t=new Date(t.getTime()-86400000); }
+      cur={who:who||(cur?cur.who:YOU), x:body, t:t, added:true}; out.push(cur);
+    } else cur.x+='\n'+body;
+  });
+  var lt=MSGS.length?MSGS[MSGS.length-1].t.getTime():0;
+  out.forEach(function(m){ if(m.t.getTime()<=lt){ lt+=60000; m.t=new Date(lt); } else lt=m.t.getTime(); });
+  return out;
 }
 function addCtx(){
   var v=(document.getElementById('addText').value||'').trim();
   if(!v) return;
-  ADD=v; STC=null; renderCtx(); renderLast();
+  var ms=parseAdd(v); if(!ms.length) return;
+  ADD=(ADD?ADD+'\n':'')+v;
+  MSGS=MSGS.concat(ms);
+  /* 結果画面も含めて全部を読み直す（画面はこのまま） */
+  render(true);
+  buildScn(); renderCtx(); renderLast();
   document.getElementById('addText').value='';
-  if(!document.getElementById('sitText').value.trim()) applySit();
+  applySit();
 }
 function usedReplies(){ try{ return parseInt(localStorage.getItem('yomitoki:replies')||'0',10)||0; }catch(e){ return 0; } }
 function useReply(){ try{ localStorage.setItem('yomitoki:replies',String(usedReplies()+1)); }catch(e){} }
@@ -3074,10 +3301,12 @@ function voice(){
   var best='',bn=0,all=t.join('\n');
   for(var i=0;i<FP.length;i++){ var n=(all.match(FP[i][1])||[]).length; if(n>bn){ bn=n; best=FP[i][0]; } }
   /* 3段階：casual／soft（やわらかいです・ます）／biz（仕事相手だけ）。恋愛・婚活ではビジネス敬語にしない */
-  var lv = pol>=(GOAL.id==='back'||GOAL.id==='dating'?.5:.4) ? 'soft' : 'casual';
-  if(GOAL.id==='konkatsu') lv='soft';
+  var lv = pol>=(GOAL.id==='back'?.7:(GOAL.id==='dating'?.5:.4)) ? 'soft' : 'casual';
+  var you=MSGS.filter(function(m){return m.who===YOU && !/^\[/.test(m.x)}).slice(-60).map(function(m){return m.x}).join('\n');
+  var hon=((all+'\n'+you).match(/しております|いたします|ございます|存じます|させていただ/g)||[]).length;
+  if(GOAL.id==='konkatsu') lv = hon>=2 ? 'formal' : 'soft';
   if(lv==='soft' && GOAL.id==='biz') lv='biz';
-  if(REG==='casual') lv='casual'; else if(REG==='polite') lv=(GOAL.id==='biz'?'biz':'soft');
+  if(REG==='casual') lv='casual'; else if(REG==='polite') lv=(GOAL.id==='biz'?'biz':(lv==='formal'||GOAL.id==='konkatsu'?'formal':'soft'));
   return {polite:lv!=='casual', lv:lv, fp:best};
 }
 var REG='';
@@ -3176,6 +3405,8 @@ var SOFT={
 };
 /* 話題語：◯◯が「話題」の意味で使われている型にだけ入れる（日時・場所の◯◯には入れない） */
 function fillTopic(m){
+  /* 「◯◯の話、聞けてよかった」は会ったときの話題なので、履歴の話題語では埋めない */
+  m=m.replace(/◯◯の話、聞けてよかった/g,'話せて楽しかった').replace(/◯◯のお話、聞けてよかったです/g,'お話しできて楽しかったです');
   var tp=(GOAL.fam==='work')?'':topicWord();
   if(tp){
     m=m.replace(/言ってた◯◯/g,'言ってた'+tp).replace(/◯◯の話/g,tp+'の話').replace(/◯◯のお話/g,tp+'のお話').replace(/◯◯見て/g,tp+'見て').replace(/◯◯って/g,tp+'って').replace(/されていた◯◯/g,'されていた'+tp)
@@ -3185,13 +3416,39 @@ function fillTopic(m){
 }
 function V(m,ms){
   var v=voice();
-  if(v.lv==='biz' && POLITE[m]) m=POLITE[m];
-  else if(v.lv==='soft') m = ms || SOFT[m] || m;
+  if((v.lv==='biz'||v.lv==='formal') && POLITE[m]) m=POLITE[m];
+  else if(v.lv==='biz'||v.lv==='soft'||v.lv==='formal') m = ms || SOFT[m] || m;
+  if(v.lv==='formal') m=m.replace(/テンション上が(り|っ)ます(ね)?/g,'嬉しいです').replace(/しちゃいました/g,'しました').replace(/連絡しちゃいました/g,'ご連絡しました').replace(/承知しました。/g,'わかりました。').replace(/〜/g,'').replace(/すごくいいですね！/g,'素敵ですね。');
   m=fillTopic(m);
-  return m.replace(/\{I\}/g, v.fp || (v.polite?'私':'自分'));
+  m=PLANFILL(m);
+  m=m.replace(/\{I\}/g, v.fp || (v.polite?'私':'自分'));
+  /* 埋められなかった◯◯は出さない（仕事の型は記入欄として残す） */
+  if(GOAL.fam!=='work' && /◯/.test(m)){
+    m=m.replace(/この前言ってた◯◯/g,'この前の話').replace(/この前おっしゃっていた◯◯/g,'この前のお話').replace(/◯◯の話、聞けてよかった/g,'話せて楽しかった').replace(/◯◯のお話、聞けてよかったです/g,'お話しできて楽しかったです')
+         .replace(/◯◯見てたら思い出した/g,'ふと思い出した').replace(/◯◯見てて思い出しました/g,'ふと思い出しました').replace(/◯◯を見ていて思い出しました/g,'ふと思い出しました')
+         .replace(/◯◯さん/g,'そちら').replace(/◯◯の話の続き/g,'この前の話の続き').replace(/◯◯のお話の続き/g,'この前のお話の続き').replace(/◯◯の話、もっと聞きたい/g,'この前の話、もっと聞きたい').replace(/◯◯のお話、もっと聞きたい/g,'この前のお話、もっと聞きたい')
+         .replace(/◯◯のことで?/g,'');
+    var ls=m.split('\n').filter(function(l){ return !/◯/.test(l); });
+    m=ls.length?ls.join('\n'):(v.polite?'最近どうですか？':'最近どう？');
+  }
+  return m;
+}
+/* 約束の型の◯時・◯◯を、履歴から拾えた時間・場所で埋める */
+function PLANFILL(m){
+  if(!/◯時|◯日/.test(m)) return m;
+  var o=stance(); if(!o.plan) return m;
+  var d=planDetail(o.plan), day=o.plan.days===1&&o.plan.st==='before'?'明日':fmtDay(o.plan.d).replace(/（.）/,'');
+  m=m.replace(/◯日/g,day.replace(/^明日$/,fmtDay(o.plan.d).replace(/（.）/,'')));
+  if(d.tm) m=m.replace(/◯時/g,d.tm);
+  if(d.pl) m=m.replace(/◯◯で/g,d.pl+'で').replace(/◯◯あたり/g,d.pl+'あたり').replace(/◯◯とか/g,d.pl+'とか');
+  if(!d.tm && !d.pl){ var pl2=voice().lv!=='casual'; m=m.replace(/◯時に◯◯で大丈夫(かな|ですか)？/g, pl2?'待ち合わせはどうしましょうか？':'待ち合わせどうしよっか？').replace(/時間と場所、◯時に◯◯(とか|あたりは)(どう|どうですか)？/g, pl2?'時間と場所、こちらで候補をお送りしますね':'時間と場所、こっちで候補送るね'); }
+  if(!d.tm) m=m.replace(/◯時に/g,'');
+  if(!d.pl) m=m.replace(/◯◯で/g,'').replace(/◯◯あたり/g,'').replace(/◯◯とか/g,'');
+  return m;
 }
 /* 関係が浅い：通数が少ない、または「気になっている」段階 */
-function shallow(){ return (A&&A.R.total<80) || GOAL.id==='crush'; }
+function shallow(){ if(GOAL.id==='dating'||GOAL.id==='konkatsu'||GOAL.id==='back'||/付き合|遠距離|彼氏|彼女/.test(REL)) return false; return (A&&A.R.total<80) || GOAL.id==='crush'; }
+function isLDR(){ return /遠距離/.test(REL); }
 /* 返信案カード。（送らない）は送る文ではないので、コピーなしの別枠 */
 function sugHTML(arr,pre){
   var h='';
@@ -3204,6 +3461,8 @@ function sugHTML(arr,pre){
       continue;
     }
     if(lead) m=lead[2].replace(/^\s+/,'');
+    var wy=arr[j].w; if(!shallow()) wy=wy.replace(/まだ関係が浅いうちは、?/g,'').replace(/関係が浅いうちは、?/g,'');
+    arr[j]={k:arr[j].k,m:arr[j].m,ms:arr[j].ms,w:wy};
     h+='<div class="sug"><div class="hd"><span class="k">'+arr[j].k+'</span>'+
        '<button class="cp" onclick="cp(this,\''+id+'\')">コピー</button></div>'+
        '<div class="bub">'+(lead?'<div class="when">⏱ '+lead[1]+'</div>':'')+'<div class="m" id="'+id+'" onclick="tapBub(this)">'+m+'</div></div>'+
@@ -3222,14 +3481,27 @@ function renderLast(){
     else if(o.id==='after') msg='<b>'+fmtDay(o.plan.d)+'に会ったばかり</b>です。会ったあとの1通は下の「デートのあと」から。';
     else if(o.id==='free') msg='最後はあなたの「'+shortTx(last.x,14).replace(/</g,'&lt;')+'」で、<b>自然に会話が終わっています</b>。次は明日以降、新しい話題からで大丈夫です。';
     else if(!o.chaseOK) msg='最後に送ったのは<b>あなた</b>です（'+when+'）。相手のふだんの返信は'+fmtMin(A.S.you.gap)+'。<b>'+fmtMin(o.waitMin)+'ほどは待って大丈夫</b>です。いまは追撃しないのがおすすめです。';
+    else if(mayHold() && /冷却期|あなた発信/.test(relState().n)) msg='最後に送ったのは<b>あなた</b>です（'+when+'）。いまは追いすぎない時期なので、<b>今日は送らないのがおすすめ</b>です（上の「今日やること」と同じ判断です）。送るなら、時間を空けて下の「既読スルー後」から<b>1通だけ</b>。';
     else msg='最後に送ったのは<b>あなた</b>です（'+when+'）。返事がないまま時間が経っています。送るなら、下の「既読スルー後」から<b>1通だけ</b>。';
     setHt('lastBox','<div class="lastb"><h5>いまの状態</h5><p>'+msg+'</p></div>');
     return;
   }
   var x=last.x, sx=x.length>50?x.slice(0,50)+'…':x, v=voice(), pol=v.lv!=='casual', arr;
-  if(isQ(x)||INVITE_RE.test(x)) arr=[
+  var pday=o.plan?(o.plan.days===1&&o.plan.st==='before'?'明日':WD[o.plan.d.getDay()]+'曜'):'';
+  if(o.id==='plan' && (isClosing(x)||/^\[/.test(x)||x.length<=8) && !isQ(x)) arr=[
+    {k:'A 楽しみを添える',m:pol?'ありがとうございます！\n'+pday+'、楽しみにしています':'ありがと！\n'+pday+'楽しみにしてる',w:'約束が決まっているので、<b>「楽しみ」をひとこと</b>添えて終えるのがいちばん自然です。'},
+    {k:'B ここで締める',m:'（スタンプ1つで返す）',w:'もう決まっているので、<b>スタンプで締めても</b>十分です。'}];
+  else if(INVITE_RE.test(x) && (MEET_RE.test(x)||TIME_RE.test(x)||refDate(x,new Date())) && !DECLINE_RE.test(x)) arr=[
+    {k:'A 乗る',m:pol?'ぜひ！\n楽しみにしています':'いいね、行こ！\n楽しみ',w:'<b>誘いにはまず乗る</b>。日時が決まっていなければ、次の1通で具体的に。'},
+    {k:'B 乗って具体的に',m:pol?'ぜひ！\n何時ごろがいいですか？':'いいね！\n何時ごろがいい？',w:'<b>答えと一緒に、決めるための質問をひとつ</b>。往復が減ります。'}];
+  else if(DECLINE_RE.test(x)) arr=[
+    {k:'A 気づかって引く',m:pol?'大丈夫です、気にしないでください！\nまた落ち着いたら':'全然大丈夫！\nまた落ち着いたらね',w:'<b>断り・延期には、まず相手を楽にする</b>一言。理由は聞かない。'},
+    {k:'B 次を軽く置く',m:pol?'了解です！\nまたご都合のいい日があれば教えてください':'了解！\nまた都合いい日あったら教えて',w:'<b>次の日程は相手に委ねる</b>。こちらから詰めないほうが戻ってきやすい。'}];
+  else if(isQ(x)||INVITE_RE.test(x)) arr=[
     {k:'A まず答える',m:pol?'（質問への答え）\n'+(o.couple?'そっちはどうですか？':'◯◯さんはどうですか？'):'（質問への答え）\nそっちはどう？',w:'<b>聞かれたことに先に答えて、同じ質問を返す</b>。いちばん会話が続く形です。'},
     {k:'B 答えて広げる',m:pol?'（質問への答え）\nそういえば、◯◯ってどうなりましたか？':'（質問への答え）\nそういえば◯◯ってどうなった？',w:'答えたうえで<b>話題をひとつ足す</b>。相手が返しやすくなります。'}];
+  else if(isClosing(x) && /おやすみ/.test(x) && MSGS.slice(-5,-1).some(function(m){return m.who===ME && /おやすみ/.test(m.x)})) arr=[
+    {k:'A もう返さない',m:'（二人ともおやすみを言い終えています。今日はここまで）',w:'<b>もう一往復しない</b>ほうが、きれいに終われます。'}];
   else if(isClosing(x) && /おやすみ/.test(x)) arr=[
     {k:'A そのまま返す',m:pol?'おやすみなさい〜\nまた明日':'おやすみ〜\nまた明日ね',w:'<b>同じ温度で短く</b>。ここで話を広げないほうが、明日につながります。'},
     {k:'B スタンプで',m:'（スタンプ1つで返す）',w:'相手が締めに来ているので、<b>スタンプで十分</b>です。'}];
@@ -3242,7 +3514,7 @@ function renderLast(){
   else arr=[
     {k:'A 共感して聞く',m:'それめっちゃいいじゃん\nどうだった？',w:'<b>相手が話したことに乗って、質問をひとつ</b>。いちばん会話が続く形です。'},
     {k:'B 共感だけ',m:'わかる\nそれはテンション上がるやつ',w:'<b>評価せず、同じ側に立つ</b>。質問攻めにならないときの返し方。'}];
-  arr=notSent(arr);
+  arr=notSent(semFilter(arr));
   setHt('lastBox','<div class="lastb"><h5>'+(o.id==='plan'?'約束の前。まず相手の最後の1通に返す':'相手の最後の1通への返し方')+'</h5><div class="lastq">'+when+' '+dn(last.who).replace(/</g,'&lt;')+'：'+sx.replace(/</g,'&lt;')+'</div>'+sugHTML(arr,'lb')+'</div>');
 }
 
@@ -3252,11 +3524,12 @@ function start(text){
   var all=parseLINE(text);
   CALLS=all.filter(function(m){return m.call});
   MSGS=all.filter(function(m){return !m.call});
-  if(MSGS.length<10){
+  FEW = MSGS.length>=6 && MSGS.length<10;
+  if(MSGS.length<6){
     var why = MSGS.length===0
       ? (/\t/.test(text)||/^\d{1,2}:\d{2}/m.test(text) ? '日付の行が見つかりませんでした。' : '「時刻・名前・本文」の形が見つかりませんでした。本文だけをコピーすると読めません。')
       : '読み取れたのは <b>'+MSGS.length+'通</b>でした。';
-    setHt('err','<div class="err">'+why+'<br>傾向を読むには<b>最低10通、できれば50通以上</b>必要です。<br>LINEの「トーク履歴を送信」→「コピー」で出てきた内容を、<b>そのまま全部</b>貼り付けてください。</div>');
+    setHt('err','<div class="err">'+why+'<br>返信案は<b>6通から</b>、傾向の分析は<b>10通以上（できれば50通以上）</b>で出せます。<br>LINEの「トーク履歴を送信」→「コピー」で出てきた内容を、<b>そのまま全部</b>貼り付けてください。</div>');
     return;
   }
   var cnt={};
@@ -3305,6 +3578,27 @@ document.getElementById('file').onchange=function(e){
   r.onload=function(ev){ start(ev.target.result); };
   r.readAsText(f,'UTF-8');
 };
+
+/* ============ 記録した相手の一覧（この端末の中だけ） ============ */
+function recItems(){
+  var out=[]; try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(!/^yomitoki:m:/.test(k)) continue; try{ var v=JSON.parse(localStorage.getItem(k)); if(v&&v.score!=null) out.push({k:k,v:v}); }catch(_){} } }catch(e){}
+  return out.sort(function(a,b){ return (b.v.ts||0)-(a.v.ts||0); });
+}
+var RECOPEN={}, RECSHOW={};
+function renderRecList(){
+  var w=document.getElementById('recWrap'); if(!w) return;
+  var it=recItems(); if(!it.length){ w.style.display='none'; return; }
+  w.style.display='';
+  var h='';
+  it.forEach(function(r,i){
+    var nm=RECSHOW[r.k]&&r.v.name?r.v.name:'◯◯◯';
+    h+='<button class="recrow" onclick="recTap(\''+r.k+'\')"><span class="rn">'+nm.replace(/</g,'&lt;')+'</span><span class="rv">前のめり '+(r.v.eager!=null?r.v.eager:'—')+'・噛み合い '+r.v.score+'・'+(r.v.date||'')+'</span></button>';
+    if(RECOPEN[r.k]) h+='<div class="recdet">'+(r.v.goal?'目的：'+r.v.goal+'<br>':'')+'前回の分析：'+(r.v.date||'—')+'（'+(r.v.total||'—')+'通）'+(r.v.note?'<br>メモ：'+r.v.note.replace(/</g,'&lt;'):'')+'<br><button class="btn g" style="margin-top:6px" onclick="RECSHOW[\''+r.k+'\']=!RECSHOW[\''+r.k+'\'];renderRecList()">'+(RECSHOW[r.k]?'名前を伏せる':'名前を表示する')+'</button></div>';
+  });
+  setHt('recBox',h);
+}
+function recTap(k){ RECOPEN[k]=!RECOPEN[k]; renderRecList(); }
+renderRecList();
 
 /* ============ SAMPLE ============ */
 var SAMPLE=['[LINE] ミナとのトーク履歴','保存日時：2026/10/01 09:12',''].join('\n')+'\n'+(function(){
