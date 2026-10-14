@@ -261,6 +261,13 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .mqcap{text-align:center;font-size:14.5px;color:var(--ink);margin:2px 0 6px;font-weight:700}
 .mqcap b{color:var(--brand)}
 
+/* LINE解析カード */
+.lnbox{gap:12px}
+.lnbox .lnlead{margin:0;font-size:13px;color:var(--soft);line-height:1.8}
+.lnbox .flow{gap:4px;margin-top:2px}
+.lnbox .fstep{background:transparent;border:0;padding:6px 0;box-shadow:none}
+.lnbox .fstep.now{border:0;box-shadow:none}
+.lnbox textarea{margin-top:2px}
 /* 区切り */
 .sep{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;margin:22px 0 2px;
   font-weight:700;letter-spacing:.04em}
@@ -378,11 +385,11 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 
 /* result */
 .sect{display:flex;flex-direction:column;gap:11px}
-.sect>h3{margin:0;font-size:12px;letter-spacing:.14em;color:var(--brand);font-family:"IBM Plex Mono",monospace;font-weight:600}
+.sect>h3{margin:0;font-size:15px;letter-spacing:.02em;color:var(--ink);font-weight:700;line-height:1.5}
 .fold{border-top:1px solid var(--line)}
 .fold>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:13px 2px;gap:10px}
 .fold>summary::-webkit-details-marker{display:none}
-.fold>summary h3{margin:0;font-size:12px;letter-spacing:.14em;color:var(--brand);font-family:"IBM Plex Mono",monospace;font-weight:600}
+.fold>summary h3{margin:0;font-size:14.5px;letter-spacing:.02em;color:var(--ink);font-weight:700;line-height:1.5}
 .fold>summary::after{content:"＋";color:var(--faint);font-size:15px;flex:none}
 .fold[open]>summary::after{content:"−"}
 .fold>.sect{padding:0 0 16px}
@@ -447,10 +454,15 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .inc ul{margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
 
 /* reply */
-.scn{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.scn button{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 10px;font-family:inherit;color:var(--ink);
-  font-size:13.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.4}
-.scn button .e{font-size:19px}
+.scnwrap{display:flex;flex-direction:column;gap:7px}
+.scnhd{margin:0;font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.04em}
+.scn{display:flex;gap:7px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scn::-webkit-scrollbar{display:none}
+.scn button{flex:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-family:inherit;color:var(--ink);
+  font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:row;align-items:center;gap:5px;line-height:1.3;white-space:nowrap;min-height:40px}
+.scn button .e{font-size:15px}
+.ctx .more2{align-self:flex-start;background:none;border:0;padding:4px 0;font:inherit;font-size:12px;font-weight:700;color:var(--brand);cursor:pointer;min-height:32px}
+.rfold>summary h3{color:var(--ink)}
 .scn button.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-d)}
 .sug{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:0;overflow:hidden}
 .sug .hd{padding:11px 14px;background:var(--card2);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
@@ -556,56 +568,45 @@ b{font-weight:700}
       <div id="myTypeNow"></div>
     </div>
 
-    <div class="sep">LINEの履歴から、関係を読み解く</div>
-
-    <div class="flow">
-      <div class="fstep">
-        <span class="no">1</span>
-        <div class="bd">
-          <h6>LINEで履歴を書き出して、コピー</h6>
-          <div class="tap">
-            <span>相手とのトーク</span><span class="ar">▸</span>
-            <span class="k">右上 ≡</span><span class="ar">▸</span>
-            <span class="k">設定</span><span class="ar">▸</span>
-            <span class="k">トーク履歴を送信</span><span class="ar">▸</span>
-            <span class="k">コピー</span>
+    <div class="ctbox lnbox">
+      <h5>気になるあの人とのLINEを、読み解く</h5>
+      <p class="lnlead">履歴を貼るだけ。返信の速さや話しかける割合から、<b>二人のいまと「次に送る1通」</b>が分かります。</p>
+      <div class="flow">
+        <div class="fstep">
+          <span class="no">1</span>
+          <div class="bd">
+            <h6>LINEで履歴を書き出して、コピー</h6>
+            <div class="tap">
+              <span>相手とのトーク</span><span class="ar">▸</span>
+              <span class="k">右上 ≡</span><span class="ar">▸</span>
+              <span class="k">設定</span><span class="ar">▸</span>
+              <span class="k">トーク履歴を送信</span><span class="ar">▸</span>
+              <span class="k">コピー</span>
+            </div>
+          </div>
+        </div>
+        <div class="fstep now">
+          <span class="no">2</span>
+          <div class="bd">
+            <h6>ここに貼り付ける</h6>
+            <p class="sub">下の枠を長押し → <b>ペースト</b> → 読み解く</p>
           </div>
         </div>
       </div>
-
-      <div class="fstep now">
-        <span class="no">2</span>
-        <div class="bd">
-          <h6>ここに貼り付ける</h6>
-          <p class="sub">下の枠を長押し → <b>ペースト</b> → 読み解く</p>
-        </div>
-      </div>
+      <textarea id="paste" placeholder="ここを長押しして、ペースト"></textarea>
+      <p class="ftiny" style="margin:0">🔒 貼り付けた履歴は外部に送信されません（解析は端末の中だけ）</p>
+      <button class="btn" id="go">読み解く</button>
+      <div id="err"></div>
+      <p class="ftiny" style="margin:0">コピーがうまくいかないときは <button onclick="document.getElementById('file').click()">履歴ファイルを選ぶ</button>
+        <input id="file" type="file" accept=".txt,text/plain" style="display:none"></p>
     </div>
-
-    <textarea id="paste" placeholder="ここを長押しして、ペースト"></textarea>
-    <p class="ftiny" style="margin:0">🔒 貼り付けた履歴は外部に送信されません（解析は端末の中だけ）</p>
-    <button class="btn" id="go">読み解く</button>
-    <div id="err"></div>
-
-    <p class="ftiny">コピーがうまくいかないときは <button onclick="document.getElementById('file').click()">履歴ファイルを選ぶ</button>
-      <input id="file" type="file" accept=".txt,text/plain" style="display:none"></p>
 
     <button class="btn g" id="demo">サンプルで試す（30秒）</button>
-
-    <div class="future">
-      <h4>本番では、ファイルを選びません</h4>
-      <p>この試作はブラウザで動いているので、どうしてもファイル経由になります。<b>本番はLINE公式アカウントで作るので、こうなります。</b></p>
-      <ol>
-        <li><b>全履歴を渡すとき</b><br>トーク履歴を送信 → 共有 → <b>LINE</b> → よみとき に送る<br><span>ファイルを探す操作はゼロ。LINEから出ません</span></li>
-        <li><b>直近だけ渡すとき</b><br>メッセージを選んで <b>転送</b> → よみとき<br><span>2タップ。いちばん使う導線</span></li>
-        <li><b>急いでいるとき</b><br>スクリーンショットを <b>そのまま送る</b><br><span>1タップ</span></li>
-      </ol>
-    </div>
 
     <div class="priv">
       <b>🔒 履歴の本文は外部に送信しません。</b>解析はすべてこのブラウザの中で行います。スコアやメモなど分析の記録は<b>この端末の中にだけ</b>保存され、結果画面の「この相手の記録を消す」でいつでも消せます。
     </div>
-    <p class="note">※ これは触って確かめるための試作です。返信案は型に沿った雛形で、本番ではあなたの文体を学習して生成します。</p>
+    <p class="note">※ β版です。返信案は型から作っています。</p>
   </div>
 </section>
 
@@ -711,14 +712,14 @@ b{font-weight:700}
     <p class="note" style="margin:0">↓ 数字と根拠は、タップすると開きます</p>
 
     <details class="fold">
-      <summary><h3>00 — この人について</h3></summary>
+      <summary><h3>この人について</h3></summary>
       <div class="sect">
       <div class="memo" id="memoBox"></div>
       <div class="memo" id="evBox" style="margin-top:9px"></div></div>
     </details>
 
     <details class="fold">
-      <summary><h3>01 — 相手はこういう人</h3></summary>
+      <summary><h3>相手はこういう人</h3></summary>
       <div class="sect">
       <div class="pc">
         <div class="pc-top">
@@ -731,13 +732,13 @@ b{font-weight:700}
     </details>
 
     <details class="fold">
-      <summary><h3>02 — 相手の数字</h3></summary>
+      <summary><h3>相手の数字</h3></summary>
       <div class="sect">
       <div class="facts" id="yFacts"></div></div>
     </details>
 
     <details class="fold">
-      <summary><h3>03 — あなたはこういう人</h3></summary>
+      <summary><h3>あなたはこういう人</h3></summary>
       <div class="sect">
       <div class="pc">
         <div class="pc-top">
@@ -751,21 +752,21 @@ b{font-weight:700}
     </details>
 
     <details class="fold">
-      <summary><h3>04 — 二人のリズム</h3></summary>
+      <summary><h3>二人のリズム</h3></summary>
       <div class="sect">
       <div class="cmp" id="cmpBox"></div>
       <div class="verd" id="verd"></div></div>
     </details>
 
     <details class="fold">
-      <summary><h3>05 — 噛み合いスコア</h3></summary>
+      <summary><h3>噛み合いスコア</h3></summary>
       <div class="sect">
       <div class="bigsc" style="padding:2px 0 8px"><span class="n" id="rScore">—</span><span class="l">／ 100　やり取りの実測から</span></div>
       <div class="sbrk" id="scoreBrk"></div></div>
     </details>
 
     <details class="fold">
-      <summary><h3>06 — いま読み取れること</h3></summary>
+      <summary><h3>いま読み取れること</h3></summary>
       <div class="sect">
       <p class="note" style="margin:0">確率は出しません。<b>データから言えることだけ</b>を3つに分けています。</p>
       <div id="baseBox"></div>
@@ -775,7 +776,7 @@ b{font-weight:700}
     </details>
 
     <div class="sect">
-      <h3>07 — ここから先</h3>
+      <h3>ここから先</h3>
       <div class="lockc">
         <div class="blur">
           <p id="lockTxt" style="margin:0;font-size:14px;line-height:1.9;color:var(--soft)">前半と後半で、相手の返信の速さと長さがどう変わったか。相手の「ふだん」と比べたときのズレ。やっていいこと・やらないほうがいいこと……</p>
@@ -843,19 +844,19 @@ b{font-weight:700}
   <div class="pad">
     <div class="hdr2"><span class="av" id="rpMe">🌙</span><span class="x">×</span><span class="av" id="rpYou">🌙</span></div>
     <div class="bigsc"><span class="n" id="rpScore">—</span><span class="l" id="rpLab">RELATIONSHIP SCORE</span></div>
-    <div class="sect"><h3>01 — スコアの内訳</h3><div class="sbrk" id="rpBrk"></div><div id="rpSum" style="display:flex;flex-direction:column;gap:9px"></div></div>
-    <div class="sect" id="rpRelSect" style="display:none"><h3>02 — あなたが書いた関係について</h3>
+    <div class="sect"><h3>スコアの内訳</h3><div class="sbrk" id="rpBrk"></div><div id="rpSum" style="display:flex;flex-direction:column;gap:9px"></div></div>
+    <div class="sect" id="rpRelSect" style="display:none"><h3>あなたが書いた関係について</h3>
       <div class="quo" id="rpRelQuo"></div><div class="pc"><p id="rpRelView"></p></div></div>
-    <div class="sect"><h3 id="rpObsH">02 — いま起きていること</h3><div class="obs" id="rpObs"></div></div>
-    <div class="sect" id="rpTrendSect"><h3 id="rpTrendH">03 — 前半と後半で、どう変わったか</h3><div class="trend" id="rpTrend"></div></div>
-    <div class="sect"><h3>04 — 相手の「ふだん」と比べて</h3><div id="rpBase"></div></div>
-    <div class="sect"><h3>05 — この人の扱い方</h3><div class="pc"><p id="rpWho"></p></div></div>
-    <div class="sect"><h3>06 — やっていいこと／ダメなこと</h3>
+    <div class="sect"><h3 id="rpObsH">いま起きていること</h3><div class="obs" id="rpObs"></div></div>
+    <div class="sect" id="rpTrendSect"><h3 id="rpTrendH">前半と後半で、どう変わったか</h3><div class="trend" id="rpTrend"></div></div>
+    <div class="sect"><h3>相手の「ふだん」と比べて</h3><div id="rpBase"></div></div>
+    <div class="sect"><h3>この人の扱い方</h3><div class="pc"><p id="rpWho"></p></div></div>
+    <div class="sect"><h3>やっていいこと／ダメなこと</h3>
       <div class="ddb ok"><h4>◎ 効くこと</h4><ul id="rpDo"></ul></div>
       <div class="ddb ng"><h4>✕ やらないほうがいいこと</h4><ul id="rpDont"></ul></div>
     </div>
-    <div class="sect"><h3>07 — LINEの距離感</h3><div class="pc"><p id="rpTempo"></p></div></div>
-    <div class="sect"><h3>08 — 次の一手</h3><div class="nxt"><h4>いま、これをやる</h4><p id="rpNext"></p></div></div>
+    <div class="sect"><h3>LINEの距離感</h3><div class="pc"><p id="rpTempo"></p></div></div>
+    <div class="sect"><h3>次の一手</h3><div class="nxt"><h4>いま、これをやる</h4><p id="rpNext"></p></div></div>
     <button class="btn" onclick="toReply()">この相手への返信をつくる →</button>
     <button class="btn g" onclick="go('result')">← 解析結果に戻る</button>
   </div>
@@ -867,21 +868,28 @@ b{font-weight:700}
   <div class="pad">
     <div class="ctx" id="ctxBox"></div>
     <div id="lastBox"></div>
-    <div class="freein">
-      <label>新しいやり取りを足す<span>任意</span></label>
-      <textarea id="addText" placeholder="スクリーンショットの文字起こし、または最近のLINEを貼り付け&#10;（履歴を渡したあとに来たメッセージがあれば）"></textarea>
-      <button class="btn g" onclick="addCtx()">この内容を文脈に足す</button>
+    <div class="scnwrap">
+      <p class="scnhd">場面から選ぶ</p>
+      <div class="scn" id="scnBox"></div>
     </div>
-    <div class="freein">
-      <label>いま、どういう状況？<span>任意</span></label>
-      <textarea id="sitText" placeholder="例）最近そっけなくて距離ができてる。仲直りしたい&#10;例）3日前に誘って返事がない"></textarea>
-      <div class="chips" id="sitChips"></div>
-      <button class="btn" onclick="applySit()">この状況で返信案をつくる</button>
-    </div>
-    <p class="note" style="margin:0">または、場面から選ぶ</p>
-    <div class="scn" id="scnBox"></div>
-    <div id="sugBox" style="display:flex;flex-direction:column;gap:10px"></div>
-    <p class="note" id="repNote" style="display:none">※ 試作のため雛形から生成しています。本番ではあなたの過去のLINEから文体を学習し、長さ・分割・絵文字の癖まで合わせて生成します。</p>
+    <div id="sugBox" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:64px"></div>
+    <details class="fold rfold" id="sitFold">
+      <summary><h3>状況を伝えて作り直す</h3></summary>
+      <div class="sect">
+        <div class="freein">
+          <label>いま、どういう状況？<span>任意</span></label>
+          <textarea id="sitText" placeholder="例）最近そっけなくて距離ができてる。仲直りしたい&#10;例）3日前に誘って返事がない"></textarea>
+          <div class="chips" id="sitChips"></div>
+          <button class="btn" onclick="applySit()">この状況で返信案をつくる</button>
+        </div>
+        <div class="freein">
+          <label>新しいやり取りを足す<span>任意</span></label>
+          <textarea id="addText" placeholder="スクリーンショットの文字起こし、または最近のLINEを貼り付け&#10;（履歴を渡したあとに来たメッセージがあれば）"></textarea>
+          <button class="btn g" onclick="addCtx()">この内容を文脈に足す</button>
+        </div>
+      </div>
+    </details>
+    <p class="note" id="repNote" style="display:none">※ β版のため、返信案は型から作っています。</p>
   </div>
 </section>
 
@@ -1195,16 +1203,22 @@ function applySit(){
     (d?'<br><br>→ <span class="sitbadge">'+d.label+'</span> として組み立てました':'')+'</div>';
   var arr = d && SITSETS[d.id] ? SITSETS[d.id] : null;
   if(!arr){
-    if(!SIT){ setHt('sugBox','<div class="quo">状況を書くか、下の場面から選ぶと案が出ます。</div>'); return; }
-    setHt('sugBox',head+'<div class="quo">この状況にぴったりの型は、まだ用意できていません。<b>下の「場面」から近いものを選んでください。</b></div>');
-    return;
+    if(!SIT){ setHt('sugBox','<div class="quo">状況を書くか、上の場面から選ぶと案が出ます。</div>'); toSug(); return; }
+    setHt('sugBox',head+'<div class="quo">この状況にぴったりの型は、まだ用意できていません。<b>上の「場面」から近いものを選んでください。</b></div>');
+    toSug(); return;
   }
   if(d.id==='cold' && shallow()) arr=[arr[0],{k:'B 軽く確かめる',m:'最近忙しい？\n落ち着いたらまた話そ',w:'まだ関係が浅いうちは<b>「距離を感じる」と言葉にしない</b>ほうが安全です。軽く様子を聞くだけにする。'},arr[2]];
   var h=head+styleNote()+sugHTML(arr,'mg');
-  setHt('sugBox',remainLabel()+h);
+  setHt('sugBox',h+remainLabel());
   document.getElementById('repNote').style.display='block';
   var all=document.querySelectorAll('#scnBox button');
   for(var k=0;k<all.length;k++) all[k].classList.remove('on');
+  toSug();
+}
+/* 状況から作ったときは、案の位置まで送る */
+function toSug(){
+  var e=document.getElementById('sugBox'); if(!e) return;
+  setTimeout(function(){ try{ e.scrollIntoView({behavior:'smooth',block:'start'}); }catch(_){ e.scrollIntoView(); } },30);
 }
 
 /* ============ GOALS ============ */
@@ -2034,7 +2048,7 @@ function render(){
 function openShare(){ go('share'); }
 
 /* ============ REPLY ============ */
-var SCNE={'不安を伝える':'🫶','誘う':'🍽','久しぶり':'🕊','既読スルー後':'🌫','謝る':'🙏','盛り上げる':'🎈','お礼':'💐',
+var SCNE={'不安を伝える':'🫶','誘う':'🍽','久しぶり':'🕊','既読スルー後':'⏳','謝る':'🙏','盛り上げる':'🎈','お礼':'💐',
  '来店に誘う':'🥂','打ち合わせに誘う':'📅','依頼する':'📨','催促する':'⏳','相談にのる':'🫧'};
 var SCN=[];
 function buildScn(){
@@ -2046,6 +2060,8 @@ function buildScn(){
 function pickScn(i){
   for(var k=0;k<SCN.length;k++) document.getElementById('sc'+k).classList.remove('on');
   document.getElementById('sc'+i).classList.add('on');
+  var bx=document.getElementById('scnBox'), bt=document.getElementById('sc'+i);
+  if(bx&&bt) bx.scrollLeft=Math.max(0,bt.offsetLeft-bx.offsetLeft-16);
   var C = PTYPE? (PTYPE[1]==='T') : (A.S.you.avgLen<12);
   var H = PTYPE? (PTYPE[2]==='L') : (A.S.you.avgLen>=15);
   var S = PTYPE? (PTYPE[0]==='S') : (A.S.you.gap>45);
@@ -2137,7 +2153,7 @@ function pickScn(i){
      {k:'C 送らずに整える',m:'（送る前に、言いたいことを1行に絞る）',w:'不安なときほど長く・何通も送りがちです。<b>1行にできないうちは、まだ送らない</b>。'}];
   var arr=sets[SCN[i].k]||sets['盛り上げる'];
   var h=sugHTML(arr,'mg');
-  setHt('sugBox',remainLabel()+styleNote()+h);
+  setHt('sugBox',h+styleNote()+remainLabel());
   document.getElementById('repNote').style.display='block';
 }
 function cpOK(btn){
@@ -2269,7 +2285,7 @@ function numberSects(id){
   for(var i=0;i<hs.length;i++){
     if(hs[i].style.display==='none') continue;
     var h=hs[i].querySelector('h3'); if(!h) continue;
-    n++; h.textContent=h.textContent.replace(/^\d\d/, (n<10?'0':'')+n);
+    n++; h.textContent=h.textContent.replace(/^\d\d — /,'');
   }
 }
 function arrow(oldv,newv,lowerIsBetter){
@@ -2321,10 +2337,10 @@ function renderReport(){
     else if(dd&&dd.id==='cold') rv='<b>距離ができている状態からの再構築です。</b>数字を見ると'+(S.me.total>S.you.total*1.4?'あなたの発信量が相手を上回っています。まず量を落とすのが先です。':'発信量のバランスは崩れていません。原因は量ではなく、内容かタイミングの可能性が高い。');
     else rv='書いていただいた関係を前提に読み解きます。相手はあなたに対して<b>「'+F4[YT].n+'」</b>。'+F4[YT].t+'というのが、いまの接し方です。';
     setHt('rpRelView',rv);
-    setTx('rpObsH','03 — いま起きていること');
+    setTx('rpObsH','いま起きていること');
   } else {
     document.getElementById('rpRelSect').style.display='none';
-    setTx('rpObsH','02 — いま起きていること');
+    setTx('rpObsH','いま起きていること');
   }
 
   // --- observations from real data ---
@@ -2422,8 +2438,10 @@ function renderReport(){
   go('report');
 }
 var ADD='';
+var CTXN=3;
+function moreCtx(){ CTXN = CTXN>3 ? 3 : 8; renderCtx(); }
 function renderCtx(){
-  var last=MSGS.slice(-6);
+  var last=MSGS.slice(-CTXN);
   var h='<h5>直近のやり取り</h5>';
   for(var i=0;i<last.length;i++){
     var m=last[i];
@@ -2431,6 +2449,7 @@ function renderCtx(){
     h+='<div class="cline'+(m.who===ME?' mine':'')+'"><span class="cw">'+(m.who===ME?'あなた':m.who)+' '+
        (m.t.getMonth()+1)+'/'+m.t.getDate()+'</span><span class="cm">'+tx.replace(/</g,'&lt;')+'</span></div>';
   }
+  if(MSGS.length>3) h+='<button class="more2" onclick="moreCtx()">'+(CTXN>3?'閉じる −':'もっと見る ＋')+'</button>';
   if(ADD) h+='<div class="cnew"><b>追加した内容</b><br>'+ADD.replace(/</g,'&lt;')+'</div>';
   setHt('ctxBox',h);
 }
@@ -2455,10 +2474,20 @@ function toReplyFree(){
 function remainLabel(){
   if(PAID) return '';
   var left=freeLeft();
-  return '<div class="quo rmn" style="margin-bottom:9px">無料でコピーできるのは、あと <b>'+left+'回</b>です。<span style="font-size:11.5px">（見るだけなら減りません）</span></div>';
+  return '<div class="quo rmn">無料でコピーできるのは、あと <b>'+left+'回</b>です。<span style="font-size:11.5px">（見るだけなら減りません）</span></div>';
 }
 function refreshRemain(){ var e=document.querySelector('#sugBox .rmn'); if(e) e.outerHTML=remainLabel()||''; }
-function toReply(){ buildScn(); buildChips('sitChips',SIT_CHIPS,'sitText'); renderCtx(); renderLast(); setHt('sugBox',''); go('reply'); }
+function toReply(){
+  CTXN=3; buildScn(); buildChips('sitChips',SIT_CHIPS,'sitText'); renderCtx(); renderLast(); setHt('sugBox','');
+  var f=document.getElementById('sitFold'); if(f) f.open=false;
+  /* 最後が自分なら、待つときの案を最初から出しておく */
+  var last=MSGS[MSGS.length-1];
+  if(last && last.who===ME && SCN.length){
+    var i=-1; for(var k=0;k<SCN.length;k++) if(SCN[k].k==='既読スルー後') i=k;
+    pickScn(i<0?0:i);
+  }
+  go('reply');
+}
 
 /* ============ 口調と一人称（本人の送信文から推定） ============ */
 function voice(){
@@ -2539,7 +2568,7 @@ function renderLast(){
   var last=MSGS[MSGS.length-1]; if(!last){ setHt('lastBox',''); return; }
   function fd(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
   if(last.who===ME){
-    setHt('lastBox','<div class="lastb"><h5>いまの状態</h5><p>最後に送ったのは<b>あなた</b>です（'+fd(last.t)+'）。いまは相手の返事を待つ段階です。追加で送るなら、下の「既読スルー後」を参考にしてください。</p></div>');
+    setHt('lastBox','<div class="lastb"><h5>いまの状態</h5><p>最後に送ったのは<b>あなた</b>です（'+fd(last.t)+'）。いまは相手の返事を待つ段階です。追加で送るなら、下の案を参考にしてください。</p></div>');
     return;
   }
   var x=last.x, sx=x.length>50?x.slice(0,50)+'…':x, v=voice(), arr;
