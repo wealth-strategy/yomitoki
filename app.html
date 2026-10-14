@@ -261,6 +261,15 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .mqcap{text-align:center;font-size:14.5px;color:var(--ink);margin:2px 0 6px;font-weight:700}
 .mqcap b{color:var(--brand)}
 
+/* シェア画像 */
+.shm{position:fixed;inset:0;z-index:50;background:rgba(14,11,19,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:18px 16px}
+.shm.on{display:flex}
+.shm-in{width:100%;max-width:380px;max-height:100%;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.shm-in img{display:block;width:auto;max-width:100%;max-height:62dvh;aspect-ratio:9/16;margin:0 auto;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.5);
+  -webkit-touch-callout:default;user-select:auto}
+.shm-t{margin:4px 0 0;text-align:center;font-size:13px;color:#e9e3ef;line-height:1.7}
+.shm-in a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center}
+.shm-in .btn.g{background:transparent;color:#e9e3ef;border-color:rgba(255,255,255,.3)}
 /* LINE解析カード */
 .lnbox{gap:12px}
 .lnbox .lnlead{margin:0;font-size:13px;color:var(--soft);line-height:1.8}
@@ -484,14 +493,6 @@ textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
 .lastb .lastq{font-size:13px;color:var(--soft);background:var(--card);border-radius:10px;padding:8px 11px;line-height:1.6}
 
 /* share */
-.shr{background:linear-gradient(165deg,#2a2330,#17131d);border-radius:18px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;
-  gap:11px;text-align:center;color:#f4eff6;position:relative;overflow:hidden}
-.shr::after{content:"";position:absolute;inset:7px;border:1px solid rgba(226,103,79,.3);border-radius:12px;pointer-events:none}
-.shr .wm{font-size:9px;letter-spacing:.26em;color:#998ea6;font-family:"IBM Plex Mono",monospace}
-.shr .big{font-family:"Shippori Mincho B1",serif;font-size:40px;font-weight:800;color:var(--brand);line-height:1}
-.shr .sm{font-size:12.5px;color:#b5aac1;line-height:1.7}
-.shr .nm2{font-family:"Shippori Mincho B1",serif;font-size:24px;font-weight:700;letter-spacing:.04em}
-.shr .dv{width:46px;height:1px;background:rgba(226,103,79,.4)}
 .note{font-size:11.5px;color:var(--faint);line-height:1.7}
 b{font-weight:700}
 .orline{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;margin:2px 0}
@@ -647,7 +648,7 @@ b{font-weight:700}
     <button class="more" id="ctMore" onclick="ctToggle()">4つの軸の意味を読む ＋</button>
     <div id="ctDetail" style="display:none"></div>
     <div id="ctMid"></div>
-    <button class="btn" onclick="shareCT()">この結果をシェアする</button>
+    <button class="btn" onclick="shareCT()">この結果を画像でシェアする</button>
     <button class="btn g" id="ctNext" onclick="ctNextGo()">LINE履歴も読み解く →</button>
     <p class="note">友達や気になる相手にも送ってみてください。<b>相手のタイプが分かると、履歴の読み方が変わります。</b></p>
   </div>
@@ -893,24 +894,15 @@ b{font-weight:700}
   </div>
 </section>
 
-<!-- ========== SHARE ========== -->
-<section id="share" class="sc">
-  <div class="bar"><button class="bk" onclick="go('result')">←</button><span class="ti">シェア用カード</span></div>
-  <div class="pad">
-    <div class="shr">
-      <span class="wm">よみとき</span>
-      <span class="av" id="sAv" style="background:rgba(226,103,79,.18)">🌙</span>
-      <div class="nm2 mincho" id="sName">—</div>
-      <div class="dv"></div>
-      <div class="sm" id="sLine1">—</div>
-      <div class="big mono" id="sBig">—</div>
-      <div class="sm" id="sLine2">—</div>
-    </div>
-    <p class="note">このカードをスクリーンショットしてシェアします。本番では画像として自動生成します。</p>
-    <button class="btn g" onclick="go('result')">← 結果に戻る</button>
-  </div>
-</section>
+</div>
 
+<div class="shm" id="shm" onclick="if(event.target===this)closeShare()">
+  <div class="shm-in">
+    <img id="shmImg" alt="診断結果の画像">
+    <p class="shm-t" id="shmT">画像を<b>長押し</b>して「写真に保存」→ ストーリーに載せられます</p>
+    <a class="btn" id="shmDl" download="yomitoki-type.png">画像を保存する</a>
+    <button class="btn g" onclick="closeShare()">閉じる</button>
+  </div>
 </div>
 
 <script>
@@ -1441,6 +1433,7 @@ function showCTRes(){
   setTx('ctN',CT[c].n);
   setTx('ctC',c.split('').join('・')); setTx('ctT',CT[c].t);
   setHt('ctAx', axBars(c, MYPCT));
+  SHARE.code=null; SHARE.p=null; setTimeout(function(){ buildShareImg(c).catch(function(){}); },400);
   var h='';
   for(var k=0;k<4;k++) h+='<span>'+(c[k]===CTK[k][0]?CTAX[k][0]:CTAX[k][1])+'</span>';
   setHt('ctA4',h);
@@ -1466,15 +1459,120 @@ function ctNextGo(){
   showMyNow(); go('setup');
   var e=document.getElementById('paste'); if(e) e.scrollIntoView({block:'center'});
 }
-function shareCT(){
-  var c=CT[MYTYPE];
-  var txt='私の連絡タイプは【'+c.n+'】'+c.e+'\n「'+c.t+'」\n'+c.k+'\n\nあなたは何タイプ？\n#よみとき #連絡タイプ診断';
-  if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
-  try{ var t=document.createElement('textarea'); t.value=txt; t.style.position='fixed'; t.style.opacity='0';
-       document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-  }catch(e){ if(navigator.clipboard) navigator.clipboard.writeText(txt); }
-  alert('結果をコピーしました');
+/* ===== 診断結果をストーリー用画像（1080x1920）にする ===== */
+var SHARE={code:null,blob:null,url:null,p:null};
+function shareText(c){ return '私の連絡タイプは【'+c.n+'】\n「'+c.k+'」\n\nあなたは何タイプ？\n#よみとき #連絡タイプ診断'; }
+function loadImg(src){ return new Promise(function(ok,ng){ var i=new Image(); i.onload=function(){ok(i)}; i.onerror=ng; i.src=src; }); }
+function rrect(x,c,y,w,h,r){ x.beginPath(); x.moveTo(c+r,y); x.arcTo(c+w,y,c+w,y+h,r); x.arcTo(c+w,y+h,c,y+h,r); x.arcTo(c,y+h,c,y,r); x.arcTo(c,y,c+w,y,r); x.closePath(); }
+function fitFont(x,txt,font,size,maxW){ var z=size; do{ x.font=font.replace('{z}',z); if(x.measureText(txt).width<=maxW) break; z-=4; }while(z>20); return z; }
+function wrapLines(x,txt,maxW){
+  var out=[],cur='';
+  for(var i=0;i<txt.length;i++){ var t=cur+txt[i]; if(x.measureText(t).width>maxW && cur){ out.push(cur); cur=txt[i]; } else cur=t; }
+  if(cur) out.push(cur);
+  return out;
 }
+var FM='"Shippori Mincho B1",serif', FG='"Zen Kaku Gothic New",sans-serif', FMO='"IBM Plex Mono",monospace';
+function buildShareImg(code){
+  if(SHARE.code===code && SHARE.p) return SHARE.p;
+  var c=CT[code]; SHARE.code=code; SHARE.blob=null;
+  if(SHARE.url){ try{ URL.revokeObjectURL(SHARE.url); }catch(e){} SHARE.url=null; }
+  var L=[]; for(var k=0;k<4;k++) L.push(axOne(k, MYPCT? MYPCT[k] : (code[k]===CTK[k][0]?72:28)));
+  var top=L.map(function(a,i){return {a:a,i:i}}).sort(function(p,q){return q.a.pct-p.a.pct}).slice(0,2);
+  var codeTx=code.split('').join('・');
+  var loads=[
+    '800 120px '+FM+'|'+c.n, '800 52px '+FM+'|「'+c.k+'」よみとき',
+    '700 40px '+FG+'|'+c.t+'あなたは何タイプ？私の連絡タイプは'+top.map(function(t){return t.a.name}).join('')+'%0123456789',
+    '600 30px '+FMO+'|'+codeTx+'YOMITOKI / CONTACT TYPE'
+  ];
+  var fl = (document.fonts && document.fonts.load)
+    ? Promise.all(loads.map(function(l){ var a=l.split('|'); return document.fonts.load(a[0],a[1]).catch(function(){}); })).then(function(){ return document.fonts.ready; })
+    : Promise.resolve();
+  SHARE.p = Promise.all([fl, ART[code]?loadImg(ART[code]):Promise.resolve(null)]).then(function(r){
+    var img=r[1], W=1080, H=1920, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    var x=cv.getContext('2d');
+    var g=x.createLinearGradient(0,0,W*0.55,H); g.addColorStop(0,'#2a2330'); g.addColorStop(1,'#17131d');
+    x.fillStyle=g; x.fillRect(0,0,W,H);
+    var rg=x.createRadialGradient(W/2,640,40,W/2,640,700); rg.addColorStop(0,'rgba(226,103,79,.16)'); rg.addColorStop(1,'rgba(226,103,79,0)');
+    x.fillStyle=rg; x.fillRect(0,0,W,H);
+    x.strokeStyle='rgba(226,103,79,.35)'; x.lineWidth=2; rrect(x,30,30,W-60,H-60,30); x.stroke();
+    x.textAlign='center'; x.textBaseline='alphabetic';
+    x.fillStyle='#998ea6'; x.font='600 26px '+FMO;
+    if('letterSpacing' in x) x.letterSpacing='8px';
+    x.fillText('YOMITOKI / CONTACT TYPE',W/2,128);
+    if('letterSpacing' in x) x.letterSpacing='2px';
+    x.fillStyle='#b5aac1'; x.font='700 38px '+FG; x.fillText('私の連絡タイプは',W/2,214);
+    if('letterSpacing' in x) x.letterSpacing='0px';
+    /* キャラ */
+    var iy=258, ih=780, iw=Math.round(ih*0.75);
+    if(img){ var ar=img.naturalWidth/img.naturalHeight; iw=Math.min(700,Math.round(ih*ar)); }
+    var ix=(W-iw)/2;
+    x.save(); x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=50; x.shadowOffsetY=20; x.fillStyle='#2a2330'; rrect(x,ix,iy,iw,ih,44); x.fill(); x.restore();
+    x.save(); rrect(x,ix,iy,iw,ih,44); x.clip();
+    if(img){
+      var sw=img.naturalWidth, sh=img.naturalHeight, s0=Math.max(iw/sw,ih/sh), dw=sw*s0, dh=sh*s0;
+      x.drawImage(img,ix+(iw-dw)/2,iy+(ih-dh)/2,dw,dh);
+    } else { x.font='220px serif'; x.fillText(c.e,W/2,iy+ih/2+80); }
+    x.restore();
+    /* 名前・コード */
+    var y=iy+ih+150;
+    x.fillStyle='#ffffff'; fitFont(x,c.n,'800 {z}px '+FM,124,900); x.fillText(c.n,W/2,y);
+    y+=70; x.fillStyle='#e2674f'; x.font='600 32px '+FMO; if('letterSpacing' in x) x.letterSpacing='12px';
+    x.fillText(codeTx,W/2+6,y); if('letterSpacing' in x) x.letterSpacing='0px';
+    y+=44; x.fillStyle='rgba(226,103,79,.55)'; x.fillRect(W/2-50,y,100,2);
+    /* キャッチ */
+    y+=78; x.fillStyle='#f3edf6'; x.font='800 50px '+FM;
+    var ln=wrapLines(x,'「'+c.k+'」',880);
+    for(var i=0;i<ln.length;i++){ x.fillText(ln[i],W/2,y); y+=68; }
+    x.fillStyle='#b5aac1'; x.font='500 34px '+FG; x.fillText(c.t,W/2,y+2); y+=74;
+    /* 軸バー（濃い2つ） */
+    var bx=190, bw=700;
+    for(var j=0;j<top.length;j++){
+      var a=top[j].a;
+      x.textAlign='left'; x.fillStyle='#ddd4e4'; x.font='700 32px '+FG; x.fillText(a.name,bx,y);
+      x.textAlign='right'; x.fillStyle='#e2674f'; x.font='600 32px '+FMO; x.fillText(a.pct+'%',bx+bw,y);
+      x.fillStyle='rgba(255,255,255,.1)'; rrect(x,bx,y+16,bw,14,7); x.fill();
+      x.fillStyle='#e2674f'; rrect(x,bx,y+16,Math.max(14,bw*a.pct/100),14,7); x.fill();
+      y+=86;
+    }
+    /* フッター */
+    x.textAlign='center';
+    x.fillStyle='#ffffff'; x.font='700 46px '+FG; x.fillText('あなたは何タイプ？',W/2,H-170);
+    x.font='800 54px '+FM; var w1=x.measureText('よみ').width, w2=x.measureText('とき').width, sx=W/2-(w1+w2)/2;
+    x.textAlign='left'; x.fillStyle='#f3edf6'; x.fillText('よみ',sx,H-88); x.fillStyle='#e2674f'; x.fillText('とき',sx+w1,H-88);
+    return new Promise(function(ok){
+      if(cv.toBlob) cv.toBlob(function(b){ SHARE.blob=b; SHARE.url=b?URL.createObjectURL(b):cv.toDataURL('image/png'); ok(SHARE); },'image/png');
+      else { SHARE.url=cv.toDataURL('image/png'); ok(SHARE); }
+    });
+  }).catch(function(e){ SHARE.p=null; throw e; });
+  return SHARE.p;
+}
+function shareCT(){
+  var code=MYTYPE; if(!CT[code]) return;
+  var c=CT[code];
+  /* 画像ができていれば、タップの直後にそのままシェア（iPhoneはここで写真保存・ストーリーに渡せる） */
+  if(SHARE.code===code && SHARE.blob && navigator.canShare){
+    try{
+      var f=new File([SHARE.blob],'yomitoki-'+code+'.png',{type:'image/png'});
+      if(navigator.canShare({files:[f]})){
+        navigator.share({files:[f],text:shareText(c)}).catch(function(e){ if(!e||e.name!=='AbortError') openShareModal(); });
+        return;
+      }
+    }catch(e){}
+  }
+  openShareModal();
+}
+function openShareModal(){
+  var m=document.getElementById('shm'); if(!m) return;
+  setTx('shmT','画像をつくっています…');
+  var im=document.getElementById('shmImg'); im.removeAttribute('src');
+  m.classList.add('on');
+  buildShareImg(MYTYPE).then(function(r){
+    im.src=r.url;
+    var a=document.getElementById('shmDl'); a.href=r.url; a.download='yomitoki-'+MYTYPE+'.png';
+    setHt('shmT','画像を<b>長押し</b>して「写真に保存」→ ストーリーに載せられます');
+  }).catch(function(){ setTx('shmT','画像をつくれませんでした。この画面をスクリーンショットしてください。'); });
+}
+function closeShare(){ var m=document.getElementById('shm'); if(m) m.classList.remove('on'); }
 function copyInvite(btn){
   var t='連絡タイプ診断やってみて！16問・2分くらいで終わる\nあなたが何タイプか教えてほしい\n\n' + location.href;
   var ta=document.createElement('textarea'); ta.value=t;
@@ -2028,14 +2126,6 @@ function render(){
   setTx('repWho',YOU);
   setTx('lockTxt','前半と後半で、'+YOU+'の返信の速さ（いまは'+fmtMin(S.you.gap)+'）と長さ（'+Math.round(S.you.avgLen)+'字）がどう変わったか。相手の「ふだん」と比べたときのズレ。この相手にやっていいこと・やらないほうがいいこと……');
 
-  // share
-  setTx('sAv','💬');
-  var st0=relState();
-  setTx('sAv',st0.e);
-  setTx('sName',st0.n);
-  setTx('sLine1','この人とのやり取りは');
-  setTx('sBig',sc.total);
-  setTx('sLine2','噛み合いスコア ／ 100');
 
   renderSummary();
   renderEv();
@@ -2045,7 +2135,6 @@ function render(){
 
   go('result');
 }
-function openShare(){ go('share'); }
 
 /* ============ REPLY ============ */
 var SCNE={'不安を伝える':'🫶','誘う':'🍽','久しぶり':'🕊','既読スルー後':'⏳','謝る':'🙏','盛り上げる':'🎈','お礼':'💐',
