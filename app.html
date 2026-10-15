@@ -697,6 +697,7 @@ details.rv .rq2{color:var(--soft)}
     <div class="mq"><div class="track" id="mqTrack"></div></div>
     <p class="mqcap">異性との<b>連絡力</b>、何点？</p>
     <div id="invBox"></div>
+    <div id="homePaste"></div>
 
     <div class="ctbox">
       <h5>連絡力査定（無料・約4分）</h5>
@@ -5131,13 +5132,14 @@ function showScore(){
 /* ---- ホーム ---- */
 function renderHome(){
   var h='', L=loadLast();
+  var emp=(typeof PTS!=='undefined'&&PTS)?PTS.filter(function(p){ return !ptEff(p); })[0]:null;
+  var pasteB=(emp&&!INV)?'<button class="btn" style="margin-top:8px" onclick="PTCUR='+emp.id+';ptPasteOpen();go(\'pt2\')">相手から返ってきた結果を貼る</button>':'';
   if(MYTYPE&&CT[MYTYPE]){
     h+='<div class="nobase" style="display:flex;align-items:center;gap:11px;text-align:left">'+ill(MYTYPE,'sm me')+'<span style="flex:1">あなたは <b>'+esc(nameOf(MYTYPE))+'</b>'+(L?'／連絡力 <b>'+L.total+'点</b>':'')+'<br>'+
        (L?'<button class="btn g" style="margin-top:8px" onclick="showScore()">前回の結果を見る</button>':'<button class="btn g" style="margin-top:8px" onclick="startSQ()">続きの場面テストへ（10問）</button>')+
        '<button class="lnk" onclick="startCT(\'setup\')">タイプ診断からやりなおす</button></span></div>';
   }
-  var emp=(typeof PTS!=='undefined'&&PTS)?PTS.filter(function(p){ return !ptEff(p); })[0]:null;
-  if(emp&&!INV) h+='<button class="btn g" style="margin-top:8px" onclick="PTCUR='+emp.id+';ptPasteOpen();go(\'pt2\')">診断を送った相手の結果を貼る</button>';
+  setHt('homePaste', pasteB?'<div class="invb"><b>診断を送った相手がいます</b><span>相手から結果が返ってきたら、ここから貼ってください。</span>'+pasteB+'</div>':'');
   if(/wiped/.test(location.hash)){ h+='<div class="quo">この端末の記録をすべて消しました。</div>'; try{ history.replaceState(null,'',baseURL()); }catch(e){} }
   setHt('myTypeNow',h);
   setTx('ctStart', INV ? '診断をはじめる（12問・無料）' : (L ? '別の問題でもう一度査定する' : '連絡力査定をはじめる（無料）'));
@@ -5520,7 +5522,17 @@ function ptAdvice(me,cp,P,E){
             time:st==='ex'?'元恋人には、返事が止まったら1か月あける。そのあと、返事のいらない1通を。':(isCp(st)?(sl?'恋人の返事が止まっても、この相手なら1日は待つ。そのあと「無理しないでね」の1通を。':'返事の速い恋人が止まったときは、理由があることが多い。責めずに気づかいの1通を。'):(sl?'返事が止まっても、この相手なら3日は待つ。そのあと、返事のいらない1通を。':'この相手は返事が速いぶん、止まったときは理由があることが多い。1通だけ気づかいを。')),
             inv:st==='ex'?'元恋人には、日にちを出さない軽い誘いから。乗ってきたら、そこで日にちを決める。':(isCp(st)?(sl?'次に会う日は、1〜2週間先の候補を2つ置いておく。急な誘いは避ける。':'会いたいと思ったその日に「今週どこか会える？」と言っていい相手です。'):(sl?'この相手は1〜2週間先の2択で誘う。当日・前日の誘いは避ける。':(st==='kon'?'お返事の速い方です。話が弾んでいるうちに「来週はいかがですか」と次のお誘いを。':'この相手は盛り上がったその場で誘う。「行こうよ、来週どう？」を逃さない。'))),
             light:sl?'ゆっくり返す相手です。不安な夜に送りたくなったら、下書きに入れて翌朝読み直す。':'返事の速い相手でも、止まった夜の連投は逆効果。送るのは1通まで。'};
-    h+=sec('あなたの査定結果から、この相手で気をつけること','<div class="nxt"><h4>'+DIMS[wk]+'（'+sc.dim[wk]+'点）× '+esc(ptName(P))+'</h4><p>'+WK[wk]+'</p></div>');
+    /* 本人が点を落とした場面と答えを、この相手向けの一言につなげる（弱い項目の場面を優先、最大2つ） */
+    var miss=[];
+    if(sc.set&&sc.ans) sc.set.forEach(function(qi,i){ var q=SQ[qi], o=q&&q.o[sc.ans[i]]; if(o&&o.s<10) miss.push({q:q,o:o,w:(q.d.indexOf(wk)>=0?100:0)+(10-o.s)}); });
+    miss.sort(function(a,b){ return b.w-a.w; });
+    var mh='<div class="nxt"><h4>'+DIMS[wk]+'（'+sc.dim[wk]+'点）× '+esc(ptName(P))+'</h4><p>'+WK[wk]+'</p></div>';
+    miss.slice(0,2).forEach(function(m){
+      var best=m.q.o.filter(function(o){ return o.s===10; })[0], dk=m.q.d.indexOf(wk)>=0?wk:m.q.d[0];
+      mh+='<div class="nxt"><h4>あなたが'+m.o.s+'点だった場面</h4><p><span class="k">'+esc(m.q.sit)+(m.q.msg?'「'+esc(m.q.msg)+'」':'')+'</span><br>あなたの答え：'+esc(m.o.t)+'<br>いちばん良い返し：<b>'+esc(best.t)+'</b><br>'+(dk===wk?'':'この相手なら：'+WK[dk]+'<br>')+'<span class="k">'+esc(m.o.w)+'</span></p></div>';
+    });
+    if(!miss.length) mh+='<p class="note" style="margin:0">今回の査定では、全部の場面で10点でした。この相手にも、そのままの返し方で大丈夫です。</p>';
+    h+=sec('あなたの査定結果から、この相手で気をつけること',mh);
   }
   if(me&&st==='pre'){
     var all=ORD.map(function(c){ return {c:c,r:compat(me,mp,c,{})}; }).sort(function(a,b){ return b.r.s-a.r.s; });
