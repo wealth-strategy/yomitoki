@@ -649,6 +649,27 @@ b{font-weight:700}
 .mrow .fig{width:40px}
 .sct .fig,.ptsum .fig{width:56px}
 .ptcard{color:#fff;align-items:center;text-align:center;gap:8px}
+
+/* ===== 8回目 ===== */
+.opt .od{font-size:12px;color:var(--faint)}
+.lnk{background:none;border:0;color:var(--faint);font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 0 0;display:block}
+.dimb .dv{flex:none;width:2.6em;text-align:right;font-size:11px;color:var(--faint)} .dimb .dv.up{color:var(--data)} .dimb .dv.dn{color:var(--brand-d)}
+.sdelta b.up{color:var(--data)} .sdelta b.dn{color:var(--brand-d)}
+.rv.bad{border-left-color:#d23b3b}
+.rokw{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 13px}
+.rokh{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--data)}
+.rok{margin:0;font-size:12px;line-height:1.7;color:var(--soft)} .rok b{color:var(--data)}
+.retl{display:flex;flex-wrap:wrap;gap:6px} .retl span{font-size:12px;background:var(--sunk);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--soft)} .chk input{width:18px;height:18px}
+.ptl{display:flex;flex-direction:column;gap:7px}
+.ptrow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.ptrow .fig{width:44px} .ptrow>span:nth-child(2){flex:1;font-size:13.5px;line-height:1.5} .ptrow .k{font-size:11px;color:var(--faint)} .ptrow .ar{color:var(--faint);font-size:20px}
+.dl{margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--soft)}
+.mh{margin:4px 0 0;font-size:12px;font-weight:700;color:var(--soft)}
+.nowc button{font-size:13px;padding:7px 12px} .nowc button.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-d)}
+.nowm{background:var(--brand-soft);border-radius:4px 16px 16px 16px;padding:12px 15px;font-size:15px;line-height:1.8;color:var(--ink)}
+.shr2{display:flex;gap:8px} .shr2 .btn{flex:1}
+.ddb li .k{color:var(--faint);font-size:12px}
 </style>
 
 
@@ -769,7 +790,7 @@ b{font-weight:700}
     <div id="ctDetail" style="display:none"></div>
     <div id="ctMid"></div>
     <button class="btn" id="ctNext" onclick="ctNextGo()">連絡力を査定する（場面10問）→</button>
-    <button class="btn g" onclick="shareCT()">このタイプを画像でシェアする</button>
+    <button class="btn g" onclick="shareAs('type')">このタイプを画像でシェアする</button>
     <p class="note">気になる相手にも診断を送ってみてください。<b>相手のタイプが分かると、その人への連絡のコツが分かります。</b></p>
   </div>
 </section>
@@ -791,11 +812,12 @@ b{font-weight:700}
   <div class="pad">
     <div id="scTop"></div>
     <div class="sect"><h3>もっと良くなる3つ</h3><div class="tips" id="scTips"></div><div id="scGain"></div></div>
-    <button class="btn" onclick="shareCT()">タイプと点数を画像でシェアする</button>
+    <div class="shr2"><button class="btn" onclick="shareAs('score')">点数入りでシェア</button><button class="btn g" onclick="shareAs('type')">タイプだけシェア</button></div>
     <div class="ctbox"><h5>気になる相手がいるなら</h5><div id="ptEntry" style="display:flex;flex-direction:column;gap:10px"></div></div>
-    <details class="fold"><summary><h3>答え合わせ（10問）</h3></summary><div class="sect" id="scReview"></div></details>
-    <button class="btn g" onclick="startSQ()">別の問題でもう一度（10問）</button>
-    <button class="btn g" onclick="copyInvite(this)">友だち・気になる相手に診断を送る</button>
+    <details class="fold"><summary><h3>答え合わせ（間違えた問題から）</h3></summary><div class="sect" id="scReview"></div></details>
+    <button class="btn g" onclick="retakeSQ()">別の問題でもう一度（10問）</button>
+    <button class="btn g" onclick="startSQ()">関係を変えて査定する</button>
+    <button class="btn g" onclick="copyInvite(this,false)">友だち・気になる相手に診断を送る（リンクをコピー）</button>
     <button class="btn g" onclick="openOmake()">おまけ：LINE履歴を読み解く</button>
     <p class="note" style="margin:0">点数は、10の場面での選び方から出した目安です。正解はひとつではなく、相手との関係でも変わります。</p>
   </div>
@@ -1129,7 +1151,7 @@ function $(id){ return document.getElementById(id); }
 function setTx(id,v){ var e=$(id); if(e) e.textContent=v; }
 function setHt(id,v){ var e=$(id); if(e) e.innerHTML=v; }
 function go(id){
-  if(id==='setup') try{ renderRecList(); }catch(_){}
+  if(id==='setup'){ try{ renderRecList(); }catch(_){} try{ if(typeof renderHome==='function') renderHome(); }catch(_){} }
   var all=document.querySelectorAll('.sc');
   for(var i=0;i<all.length;i++) all[i].classList.remove('on');
   document.getElementById(id).classList.add('on');
@@ -2058,11 +2080,11 @@ function wrapLines(x,txt,maxW){
   return out;
 }
 var FM='"Shippori Mincho B1",serif', FG='"Zen Kaku Gothic New",sans-serif', FMO='"IBM Plex Mono",monospace';
-function shareKey(code){ return code+':'+genOf(code)+':'+(SCORE?SCORE.total:''); }
+function shareKey(code){ return code+':'+genOf(code)+':'+(shareSC()?shareSC().total:''); }
 function buildShareImg(code){
   var key=shareKey(code);
   if(SHARE.code===key && SHARE.p) return SHARE.p;
-  var c=meCT(code); SHARE.code=key; SHARE.blob=null;
+  var SSC=shareSC(); var c=meCT(code); SHARE.code=key; SHARE.blob=null;
   if(SHARE.url){ try{ URL.revokeObjectURL(SHARE.url); }catch(e){} SHARE.url=null; }
   var L=[]; for(var k=0;k<4;k++) L.push(axOne(k, MYPCT? MYPCT[k] : (code[k]===CTK[k][0]?72:28)));
   var top=L.map(function(a,i){return {a:a,i:i}}).sort(function(p,q){return q.a.pct-p.a.pct}).slice(0,2);
@@ -2094,7 +2116,7 @@ function buildShareImg(code){
     var SAFE=H-250, TOP=228;
     x.font='800 50px '+FM; var catchL=wrapLines(x,'「'+c.k+'」',860);
     x.font='500 34px '+FG; var tagL=wrapLines(x,c.t,860);
-    var textH = 130+64+40+74 + catchL.length*68 + tagL.length*50 + 24 + (SCORE?262:top.length*86) + 36+66+42 + 16;
+    var textH = 130+64+40+74 + catchL.length*68 + tagL.length*50 + 24 + (SSC?262:top.length*86) + 36+66+42 + 16;
     var ih=Math.max(470,Math.min(780,SAFE-TOP-textH-10));
     var iy=TOP, iw=Math.round(ih*0.75);
     if(img){ var ar=img.naturalWidth/img.naturalHeight; iw=Math.min(700,Math.round(ih*ar)); }
@@ -2120,13 +2142,13 @@ function buildShareImg(code){
     y+=24;
     /* 軸バー（濃い2つ） */
     var bx=190, bw=700;
-    if(SCORE){
-      var sb=scoreBand(SCORE.total);
+    if(SSC){
+      var sb=scoreBand(SSC.total,SSC.min);
       x.textAlign='center'; x.fillStyle='rgba(255,255,255,.06)'; rrect(x,bx,y-24,bw,236,26); x.fill();
       x.fillStyle='#b5aac1'; x.font='700 32px '+FG; x.fillText('連絡力',W/2,y+28);
-      x.font='800 120px '+FM; var nw=x.measureText(String(SCORE.total)).width; x.font='700 36px '+FG; var uw=x.measureText('/100点').width;
+      x.font='800 120px '+FM; var nw=x.measureText(String(SSC.total)).width; x.font='700 36px '+FG; var uw=x.measureText('/100点').width;
       var nx=W/2-(nw+12+uw)/2; x.textAlign='left';
-      x.fillStyle='#e2674f'; x.font='800 120px '+FM; x.fillText(String(SCORE.total),nx,y+136);
+      x.fillStyle='#e2674f'; x.font='800 120px '+FM; x.fillText(String(SSC.total),nx,y+136);
       x.fillStyle='#ddd4e4'; x.font='700 36px '+FG; x.fillText('/100点',nx+nw+12,y+136);
       x.textAlign='center'; x.fillStyle='#f3edf6'; x.font='700 30px '+FG; x.fillText(sb.n,W/2,y+190);
       y+=262; top=[];
@@ -2141,7 +2163,7 @@ function buildShareImg(code){
     }
     /* フッター：内容のすぐ下に置く（下端250pxより上） */
     y+=36; x.textAlign='center';
-    x.fillStyle='#ffffff'; x.font='700 46px '+FG; x.fillText(SCORE?'あなたは何点？':'あなたは何タイプ？',W/2,y);
+    x.fillStyle='#ffffff'; x.font='700 46px '+FG; x.fillText(SSC?'あなたは何点？':'あなたは何タイプ？',W/2,y);
     y+=66; x.font='800 54px '+FM; var w1=x.measureText('よみ').width, w2=x.measureText('とき').width, sx=W/2-(w1+w2)/2;
     x.textAlign='left'; x.fillStyle='#f3edf6'; x.fillText('よみ',sx,y); x.fillStyle='#e2674f'; x.fillText('とき',sx+w1,y);
     y+=42; x.textAlign='center'; x.fillStyle='#998ea6'; x.font='600 26px '+FMO; x.fillText('wealth-strategy.github.io/yomitoki  #よみとき',W/2,y);
@@ -4150,7 +4172,7 @@ var QZ=[
  {t:'既読をつけたまま、半日たつことは？', o:[
    {t:'まずない',ax:[0,2]},{t:'たまにある',ax:[0,.5]},{t:'わりとある',ax:[0,-1]},{t:'よくある。気にしていない',ax:[0,-2]}]},
  {t:'ふだんの一通の長さは？', o:[
-   {t:'3行以上になることが多い',ax:[2,2]},{t:'1〜2行',ax:[2,.5]},{t:'ひとことと、スタンプ',ax:[2,-1]},{t:'スタンプだけのことも多い',ax:[2,-2]}]},
+   {t:'3行以上になることが多い',ax:[2,2]},{t:'1〜2行',ax:[2,-.5]},{t:'ひとことと、スタンプ',ax:[2,-1]},{t:'スタンプだけのことも多い',ax:[2,-2]}]},
  {t:'話したいことがあるとき、どうしたい？', o:[
    {t:'LINEで、まとめて長めに送る',ax:[2,1.5],p:{ch:0}},{t:'LINEで、短く何通かに分けて',ax:[2,-1],p:{ch:1}},{t:'電話で話したい',p:{ch:2}},{t:'会ったときに話したい',ax:[2,-.5],p:{ch:3}}]},
  {t:'うれしいLINEが来たら？', o:[
@@ -4169,7 +4191,7 @@ var QZ=[
    {t:'いつもと同じ',ax:[3,1.5]},{t:'少しだけ気をつかう',ax:[3,.5]},{t:'速さも文体も、かなり変わる',ax:[3,-1.5]},{t:'考えすぎて、別人みたいになる',ax:[3,-2],p0:{ax:[1,-.5]}}]}
 ];
 var PROFN={
- fq:['連絡は多め派','毎日すこし派','2〜3日に1回派','用事だけ派'],
+ fq:['連絡多め派','毎日すこし派','2〜3日に1回派','用事だけ派'],
  ch:['長めのLINE派','短いLINE派','電話派','会って話したい派'],
  iv:['自分から誘う派','誘うのは半々派','誘ってほしい派','誘われ待ち派'],
  kd:['既読スルー気にしない','既読スルー少し気になる','既読スルー気になる','既読スルーが不安'],
@@ -4178,7 +4200,8 @@ var PROFN={
 var PROF=lsGet('yomitoki:prof',null);
 function profCode(p){ p=p||{}; return ['fq','ch','iv','kd','oi'].map(function(k){ return p[k]==null?'x':String(p[k]); }).join(''); }
 function parseProf(s){ var o={}; if(!s) return o; ['fq','ch','iv','kd','oi'].forEach(function(k,i){ var c=s[i]; if(c&&/[0-3]/.test(c)) o[k]=+c; }); return o; }
-function fullCode(){ return MYTYPE+(PROF?'-'+profCode(PROF):''); }
+function fullCode(){ var g=GDEF[MYTYPE]?genOf(MYTYPE):''; return MYTYPE+(PROF?'-'+profCode(PROF):'')+(g?'-'+g:''); }
+function nameG(c,g){ var t=CT[c]; if(!t) return ''; return (g&&GNAME[c]&&GNAME[c][g])||t.n; }
 
 /* 診断の画面（ct）を4択で動かす */
 startCT=function(from){
@@ -4212,10 +4235,11 @@ ctCalc=function(ans){
     if(o.p0&&o.p0.ax) sum[o.p0.ax[0]]+=o.p0.ax[1];
     if(o.p) for(var k in o.p) prof[k]=o.p[k];
   });
-  var code='',pct=[];
+  var code='',pct=[], last=[0,0,0,0];
+  QZ.forEach(function(q,i){ var o=q.o[ans[i]==null?1:ans[i]]; if(o.ax&&o.ax[1]) last[o.ax[0]]=o.ax[1]; });
   for(var a=0;a<4;a++){
     var p=Math.round(50+(mx[a]?sum[a]/mx[a]:0)*46);
-    p=Math.max(4,Math.min(96,p)); if(p===50) p=51;
+    p=Math.max(4,Math.min(96,p)); if(p===50) p=last[a]<0?49:51;
     pct.push(p); code+=CTK[a][p>=50?0:1];
   }
   return {code:code,pct:pct,prof:prof};
@@ -4251,7 +4275,7 @@ var SQ=[
    {t:'自分からは送らず、相手のSNSをこまめにチェックする',s:4,w:'確認するほど不安が増えます。見なくていいものは見ない。'},
    {t:'翌日もう一度、同じ質問を送り直す',s:3,w:'同じ質問の送り直しは、催促に見えます。'}]},
  {k:3,d:['emp','inv'],sit:'約束の2時間前。',msg:'ごめん、急に行けなくなった',q:'どう返す？',o:[
-   {t:'「えー楽しみにしてたのに…」',s:4,w:'正直ですが、相手の申し訳なさを増やします。残念さは「楽しみにしてたから、また絶対行こ」と前向きに。'},
+   {t:'「えー楽しみにしてたのに…」',s:5,w:'正直ですが、相手の申し訳なさを増やします。残念さは「楽しみにしてたから、また絶対行こ」と前向きに。'},
    {t:'「了解」だけ返す',s:3,w:'短すぎて、怒っているように見えます。'},
    {t:'「了解！大丈夫？落ち着いたら、また行ける日教えて」',s:10,w:'相手を気づかって、次の約束のボールを相手に渡す。いちばん感じがいい返し方です。'},
    {t:'「了解！じゃあ来週の土曜はどう？」とすぐ代わりの日を決めにいく',s:7,w:'前向きで良い返しです。ただ事情を聞く前だと、少し急いで見えることも。'}]},
@@ -4261,7 +4285,7 @@ var SQ=[
    {t:'「お大事に！必要なものあったら言ってね、届けるよ」',s:6,w:'優しさは伝わります。ただ、まだそこまで近くない関係だと、距離が近すぎることも。'},
    {t:'「もちろん！無理しないでね。治ったらまた決めよう」',s:10,w:'体調を優先して、次の約束は相手の回復を待つ。安心して休めます。'}]},
  {k:4,d:['dist','time'],sit:'0時すぎ。あなたは明日、朝が早い。',msg:'起きてる？',q:'どうする？',o:[
-   {t:'「起きてるよ！」と返して、2時まで付き合う',s:5,w:'うれしい気持ちは分かります。でも無理は続きません。'},
+   {t:'「起きてるよ！」と返して、2時まで付き合う',s:6,w:'うれしい気持ちは分かります。でも無理は続きません。'},
    {t:'朝まで既読をつけず、朝「ごめん寝てた！どうしたの？」',s:8,w:'全然あり。朝の一言で十分伝わります。'},
    {t:'「起きてるよ、どうした？明日早いから少しだけね」',s:10,w:'応えつつ、終わりの時間を先に伝える。相手も気をつかわずに済みます。'},
    {t:'「こんな時間にどうしたの？」とだけ返す',s:3,w:'責めているように読めます。'}]},
@@ -4303,13 +4327,13 @@ var SQ=[
  {k:8,d:['dist','light'],sit:'いつも長めに返してくれた相手が、ここ数日「うん」「そうだね」ばかり。',q:'どうする？',o:[
    {t:'「なんか怒ってる？」と聞く',s:4,w:'理由を探したくなる気持ちは自然です。ただ、聞かれた側は答えにくい。'},
    {t:'「最近忙しい？返事は気にしなくて大丈夫だよ」と一度だけ気づかう',s:10,w:'一度だけ気づかって、あとは相手のペースに任せる。いちばん安心させます。'},
-   {t:'自分も短めに返して、2〜3日は自分から送りすぎない',s:8,w:'相手のペースに合わせるのは良い判断です。'},
+   {t:'自分も短めに返して、2〜3日は自分から送りすぎない',s:10,w:'相手のペースに合わせるのも、同じくらい良い判断です。'},
    {t:'おもしろい話を長文で送り続けて、盛り返そうとする',s:3,w:'余裕のない相手には、読む負担が増えるだけです。'}]},
  {k:8,d:['dist','light'],sit:'いつもすぐ返してくれた相手が、最近は半日あとに返してくる。',q:'どうする？',o:[
    {t:'「最近返事遅いね」と言う',s:2,w:'責めているように聞こえます。'},
    {t:'返事を待つ間に、追加で何通か送っておく',s:3,w:'返さないといけないものが増えて、さらに遅くなります。'},
    {t:'こちらも、返すペースを相手に合わせる',s:10,w:'ペースを合わせるのが、いちばん相手を楽にします。'},
-   {t:'「忙しい時期？」と一度だけ聞いて、あとはふだんどおり',s:8,w:'一度だけなら気づかいとして届きます。'}]},
+   {t:'「忙しい時期？」と一度だけ聞いて、あとはふだんどおり',s:10,w:'一度だけなら気づかいとして届きます。ペースを合わせるのと同じくらい良い返しです。'}]},
  {k:9,d:['inv','dist'],sit:'気になる相手を、初めてごはんに誘いたい。',q:'どう送る？',o:[
    {t:'「今度ごはん行こうよ」',s:5,w:'気軽でいい。ただ「今度」は、そのまま流れやすい。'},
    {t:'「暇な日ある？」',s:4,w:'何に誘われているか分からないと、答えにくい。'},
@@ -4331,24 +4355,147 @@ var SQ=[
    {t:'SNSに「いいね」をたくさん押してアピールする',s:4,w:'気づいてほしい気持ちは分かりますが、伝わり方が読めません。'},
    {t:'「元気そうでよかった！」と軽く1通',s:6,w:'軽さは良い。ただSNSを見ていることが伝わるので、相手によっては気をつかわせます。'}]}
 ];
+/* ---- 8回目：関係の段階ごとの場面（交際中・遠距離 / 婚活） ---- */
+var STAGES=[
+ {id:'pre',n:'片思い・付き合う前',d:'気になる人、デート中の人、アプリで話している人'},
+ {id:'couple',n:'付き合っている（遠距離も）',d:'恋人とのLINE・電話'},
+ {id:'kon',n:'婚活中',d:'お見合い・仮交際・真剣交際。ていねい語で出題します'}
+];
+var STAGE=lsGet('yomitoki:stage','')||'';
+/* 付き合う前だけの場面（既存の 2・5・6・9） */
+SQ.forEach(function(q){ q.st = ([2,5,6,9].indexOf(q.k)>=0) ? ['pre'] : ['pre','couple']; });
+SQ.push(
+ {k:2,st:['couple'],d:['time','light'],sit:'付き合って半年。いつもは夜に返ってくる恋人から、丸1日返事がない。',q:'どうする？',o:[
+   {t:'「生きてる？」「おーい」と何通か送る',s:2,w:'心配が連投になると、相手は責められているように感じます。'},
+   {t:'「忙しいかな？落ち着いたら声聞かせて」と1通だけ送って、あとは待つ',s:10,w:'心配していることは1通で十分伝わります。あとは相手のペースに任せる。'},
+   {t:'「なんで返事くれないの？」',s:1,w:'理由を問う1通は、返事をさらに重くします。'},
+   {t:'何も送らず、次に連絡が来たとき「昨日どうしたの？」と問いただす',s:4,w:'待つのは良い。ただ再開した瞬間に問いただすと、次からも返しにくくなります。'}]},
+ {k:2,st:['couple'],d:['time','light'],sit:'遠距離の恋人。毎晩の電話が、今夜は――',msg:'ごめん、疲れたから今日はなしで',q:'どう返す？',o:[
+   {t:'「えー、楽しみにしてたのに」',s:4,w:'正直ですが、疲れている相手に罪悪感を足してしまいます。'},
+   {t:'「最近そればっかりだね」',s:2,w:'責める言い方は、次の電話を気まずくします。'},
+   {t:'「了解！ゆっくり休んでね。明日声聞けたらうれしい」',s:10,w:'休むことを受け止めて、次への気持ちだけ軽く置く。いちばん安心させる返しです。'},
+   {t:'「5分だけでもダメ？」',s:5,w:'会いたい気持ちは伝わります。ただ断られた直後にもう一度頼むと、断りにくさが残ります。'}]},
+ {k:5,st:['couple'],d:['inv','light'],sit:'恋人に「次の連休、旅行行こう」と言ったら――',msg:'その時期、仕事が読めなくて',q:'どう返す？',o:[
+   {t:'「いつなら読めるの？」と詰める',s:3,w:'仕事が読めない人に期限を迫ると、負担になります。'},
+   {t:'「了解！読めたら教えて。近場の日帰りでもうれしいよ」',s:10,w:'待つ姿勢と、小さい代わりの案をセットで。相手が「それなら」と言いやすくなります。'},
+   {t:'「じゃあいいや」',s:2,w:'すねた一言は、相手に謝らせる流れを作ります。'},
+   {t:'黙って、ほかの予定を入れる',s:5,w:'自分の時間を大事にするのは良い。ただ一言ないと、相手は誘いが流れたことに気づきません。'}]},
+ {k:5,st:['couple'],d:['inv','light'],sit:'遠距離。次に会う日を決めたいのに、相手の返事が「まだ分からない」ばかり。',q:'どうする？',o:[
+   {t:'「会いたくないの？」と聞く',s:2,w:'気持ちを試す質問は、答えにくさだけが残ります。'},
+   {t:'毎日「決まった？」と聞く',s:2,w:'催促が続くと、予定を決めること自体が負担になります。'},
+   {t:'相手が決めるまで、こちらからは何も言わない',s:5,w:'追わないのは良い。ただ遠距離は、候補がないと先延ばしになりやすい。'},
+   {t:'「来月のこの2つの週末、どっちかで会えたらうれしい。分かったら教えて」と候補を2つだけ置く',s:10,w:'候補を絞って置いておくと、相手は選ぶだけで済みます。'}]},
+ {k:6,st:['couple'],d:['time','inv'],sit:'久しぶりに会えたデートの帰り。',q:'どうする？',o:[
+   {t:'帰ってすぐ「今日ありがとう。久しぶりに話せてうれしかった。次はあそこ行きたいな」',s:10,w:'付き合っていても、その日のうちの「うれしかった」は効きます。次の楽しみも添えて。'},
+   {t:'付き合っているし、言わなくても伝わるので何も送らない',s:4,w:'伝わっていることも多いですが、言葉にすると関係が長持ちします。'},
+   {t:'翌日に「昨日はありがと」',s:7,w:'悪くありません。その日のうちなら、なお良い。'},
+   {t:'「次いつ会える？来週は？再来週は？」',s:5,w:'会いたい気持ちは伝わりますが、余韻より予定が先に来てしまいます。'}]},
+ {k:6,st:['couple'],d:['time','inv'],sit:'遠距離で会えた週末が終わり、相手が帰っていった夜。',q:'どうする？',o:[
+   {t:'「寂しすぎて無理…」と何通も送る',s:3,w:'寂しさは自然ですが、連投は相手の帰り道を重くします。'},
+   {t:'相手から来るまで待つ',s:5,w:'待つのも悪くない。ただ別れた直後は、こちらからの一言がうれしいタイミングです。'},
+   {t:'「来てくれてありがとう。もう寂しいけど、次に会える日まで頑張れる」',s:10,w:'感謝と寂しさを1通にまとめて、次への前向きさで締める。'},
+   {t:'「次はいつ来れる？」とすぐ聞く',s:5,w:'次が気になるのは当然。でも今夜はお礼を先に。'}]},
+ {k:9,st:['couple'],d:['inv','dist'],sit:'遠距離の恋人と毎晩電話していたが、最近相手が眠そう。',q:'どうする？',o:[
+   {t:'気にせず、毎晩かけ続ける',s:3,w:'習慣が負担に変わると、電話そのものが嫌になってしまいます。'},
+   {t:'「電話つまらない？」と聞く',s:2,w:'相手を責める質問に聞こえます。'},
+   {t:'「毎日じゃなくて、週3くらいにしてみる？そのぶん話す日を楽しみにしたい」',s:10,w:'回数を減らす理由を前向きに渡す。相手も「実は眠かった」と言いやすくなります。'},
+   {t:'自分からかけるのをやめて、相手からかかってくるのを待つ',s:5,w:'相手に任せるのはあり。ただ黙って変えると、冷めたように見えることも。'}]},
+ {k:9,st:['couple'],d:['inv','dist'],sit:'恋人とのLINEが、最近ほぼ「何時に帰る」などの連絡だけになってきた。',q:'どうする？',o:[
+   {t:'「最近冷たくない？」',s:3,w:'理由を問うより、楽しい1通を送るほうが早く戻ります。'},
+   {t:'今日あったおもしろいことを、写真つきで1つ送ってみる',s:10,w:'用事以外の1通を自分から。返事を求めない軽さがちょうどいい。'},
+   {t:'こちらも連絡だけにする',s:4,w:'合わせるのは楽ですが、そのまま固まりやすい。'},
+   {t:'長文で寂しさを伝える',s:4,w:'気持ちを伝えるのは大事。ただLINEの長文より、会ったときや電話のほうが届きます。'}]}
+);
+/* 婚活（ていねい語） */
+SQ.push(
+ {k:1,st:['kon'],d:['emp','light'],sit:'仮交際中のお相手からメッセージ。',msg:'今週は仕事でミスが続いて、少し落ち込んでいます',q:'どう返しますか？',o:[
+   {t:'「誰にでもありますよ！元気出してください！」',s:6,w:'励ましは伝わります。ただ気持ちを受け止める一言が先にあると、より安心されます。'},
+   {t:'「大変でしたね。よろしければお話を聞かせてください。お返事はご無理のない範囲で大丈夫です」',s:10,w:'受け止めて、話すかどうかはお相手に任せる。いちばん安心できる返し方です。'},
+   {t:'「私も先週、同じようなことがありまして…」と自分の話を長めに',s:5,w:'共感のつもりでも、話の主役が入れ替わってしまいます。'},
+   {t:'「お疲れさまです」とだけ返す',s:4,w:'短すぎて、話してくれたことに応えきれていません。'}]},
+ {k:2,st:['kon'],d:['time','light'],sit:'お見合いのあと、メッセージに2日返事がない。',q:'どうしますか？',o:[
+   {t:'「お忙しいところすみません、お返事まだでしょうか」',s:3,w:'催促に読めてしまいます。'},
+   {t:'もう少し待ち、4〜5日たっても来なければ、返事のいらない軽い一通を',s:10,w:'婚活では返事に時間をかける方も多い。急がず、軽い一通で様子を見るのが安心です。'},
+   {t:'相談所の担当者に、様子を聞いてもらう',s:8,w:'良い方法です。ただ2日はまだ早いので、もう少し待ってからでも。'},
+   {t:'「何か失礼がありましたでしょうか」と謝る',s:3,w:'理由が分からないまま謝ると、重く見えます。'}]},
+ {k:2,st:['kon'],d:['time','light'],sit:'仮交際中。平日は毎日返事があるのに、週末になると連絡が来ない。',q:'どうしますか？',o:[
+   {t:'「週末はお忙しいのですか」と聞く',s:4,w:'詮索されているように感じさせることがあります。'},
+   {t:'平日のペースに合わせて、週末は待つ',s:10,w:'生活のリズムに合わせるのが、いちばん負担になりません。'},
+   {t:'「何かありましたか」と何通か送る',s:2,w:'心配の連投は、お相手を追い詰めます。'},
+   {t:'週末にあえて長文を送る',s:4,w:'読む時間がない日に長文が届くと、返事の負担が増えます。'}]},
+ {k:3,st:['kon'],d:['emp','inv'],sit:'デートの前日。',msg:'体調を崩してしまい、延期させていただけますか',q:'どう返しますか？',o:[
+   {t:'「承知しました。では来週の土曜はいかがですか」',s:6,w:'前向きですが、体調の悪い方に先に日程を聞くのは負担になります。'},
+   {t:'「承知しました」のみ',s:3,w:'事務的で、気づかいが伝わりません。'},
+   {t:'「もちろんです。どうぞお大事になさってください。回復されたら、また日程をご相談させてください」',s:10,w:'体調を最優先にして、次の約束はお相手の回復を待つ。'},
+   {t:'「最近お忙しそうですね」',s:2,w:'皮肉に受け取られかねません。'}]},
+ {k:4,st:['kon'],d:['dist','time'],sit:'仮交際中。夜10時を過ぎてもメッセージが続いている。明日は朝が早い。',q:'どうしますか？',o:[
+   {t:'眠いのを我慢して、日付が変わるまで続ける',s:5,w:'誠実さは伝わりますが、毎回は続きません。'},
+   {t:'「今日もありがとうございました。明日が早いので、続きはまたお聞かせください。おやすみなさい」',s:10,w:'感謝と、終える理由と、続きの約束。きれいな締め方です。'},
+   {t:'何も言わずに寝る',s:4,w:'寝るのは正解。ただ一言ないと、お相手は返事を待ち続けます。'},
+   {t:'「夜遅いのは控えていただけますか」',s:3,w:'お願いとしては正しくても、今の段階では冷たく響きます。'}]},
+ {k:5,st:['kon'],d:['inv','light'],sit:'2回目のお食事に誘った。',msg:'その週は都合が悪くて…',q:'どう返しますか？',o:[
+   {t:'「では翌週と翌々週はいかがですか。候補を5つお送りします」',s:3,w:'熱意は伝わりますが、断りにくさを作ります。'},
+   {t:'「承知しました。ご都合のよい時期がありましたら、お気軽に教えてください」',s:10,w:'一度引いて、お相手に選んでもらう。次はお相手から来やすくなります。'},
+   {t:'「お忙しいところお誘いしてすみませんでした」',s:4,w:'謝られると、お相手は断ったことに罪悪感を持ちます。'},
+   {t:'脈がないと判断して、連絡をやめる',s:4,w:'一度の「都合が悪い」で判断するのは早すぎます。'}]},
+ {k:6,st:['kon'],d:['time','inv'],sit:'お見合い（初めてのお食事）が終わった。',q:'どうしますか？',o:[
+   {t:'翌日の夜にお礼を送る',s:6,w:'悪くありません。ただ、その日のうちのほうが印象に残ります。'},
+   {t:'その日のうちに「本日はありがとうございました。お仕事のお話がとても楽しかったです。またお話しできればうれしいです」',s:10,w:'その日のうちに、具体的な一言と「また」を添える。婚活でもいちばん効く形です。'},
+   {t:'相談所経由の返事を待つだけ',s:5,w:'ルールの範囲で、ご自身からの一言があるとより伝わります。'},
+   {t:'「次はいつお会いできますか。来週はいかがですか」とすぐに日程を聞く',s:5,w:'前向きですが、お礼より先に日程だと急いで見えます。'}]},
+ {k:7,st:['kon'],d:['emp','dist'],sit:'お相手が、こんな話をしてくれた。',msg:'前の交際では、結婚の話になると相手が逃げてしまって',q:'どう返しますか？',o:[
+   {t:'「どんな方だったんですか」と詳しく聞く',s:4,w:'お相手が話したいのは、前の人のことより「不安」のほうです。'},
+   {t:'話題を変える',s:5,w:'踏み込まないのは配慮ですが、せっかく話してくれた気持ちを流してしまいます。'},
+   {t:'「私はそういうことはしません」と言い切る',s:6,w:'安心させたい気持ちは伝わります。ただ言葉より、受け止める一言が先です。'},
+   {t:'「それはおつらかったですね。気になることがあれば、何でも聞いてください」',s:10,w:'受け止めて、聞いていいと伝える。結婚の話をしやすい空気を作れます。'}]},
+ {k:8,st:['kon'],d:['dist','light'],sit:'これまで長めだったお相手のメッセージが、ここ数日短い。',q:'どうしますか？',o:[
+   {t:'「お忙しい時期でしょうか。お返事はご無理のない範囲で大丈夫です」と一度だけ',s:10,w:'一度だけ気づかって、あとはお相手のペースに。'},
+   {t:'こちらも短めにして、ペースを合わせる',s:10,w:'合わせるのも同じくらい良い判断です。'},
+   {t:'「何か気になることがありましたか」と聞く',s:4,w:'理由を聞かれると、お相手は答えにくくなります。'},
+   {t:'長文で話題を増やして、盛り上げようとする',s:3,w:'余裕のない時期には、読む負担が増えるだけです。'}]},
+ {k:9,st:['kon'],d:['inv','dist'],sit:'3回目のデートに誘いたい。',q:'どう送りますか？',o:[
+   {t:'「またお時間あるときにお食事でも」',s:5,w:'丁寧ですが、具体的でないと流れやすい。'},
+   {t:'「ご都合のよい日をすべて教えてください」',s:4,w:'全部の予定を聞くのは、少し重く感じさせます。'},
+   {t:'「先日お話に出た和食のお店、来週の土曜か日曜のお昼はいかがですか」',s:10,w:'行き先と日にちの2択。お相手は選ぶだけで済みます。'},
+   {t:'「もしご迷惑でなければ…」と遠慮を重ねる',s:3,w:'遠慮がにじみすぎて、お相手も答えに迷います。'}]},
+ {k:10,st:['kon'],d:['light','time'],sit:'真剣交際に進みたいのに、お相手の気持ちが分からず不安な夜。',q:'どうしますか？',o:[
+   {t:'その夜に「私のことをどう思っていますか」と送る',s:3,w:'夜の不安なまま送った問いは、重く届きます。'},
+   {t:'不安な気持ちを長文で送る',s:2,w:'気持ちは大事ですが、文字だけでは受け止めきれません。'},
+   {t:'今夜は送らず、次に会ったときに落ち着いて「これからのことをお話ししたい」と伝える',s:10,w:'大事な話は会って。夜は寝かせるのが正解です。'},
+   {t:'相談所の担当者に気持ちを伝えて、確認してもらう',s:8,w:'婚活ならではの良い方法です。'}]}
+);
+
+/* ---- 出題（関係の段階ごと） ---- */
 var SQSET=[], sqi=0, sqans=[], SCORE=null;
-function pickSet(){
-  /* 場面1〜10から1問ずつ。前回出た問題はなるべく避ける */
+function stageN(id){ for(var i=0;i<STAGES.length;i++) if(STAGES[i].id===id) return STAGES[i].n; return ''; }
+function pickSet(st){
   var seen=lsGet('yomitoki:sqseen',[]), out=[];
   for(var k=1;k<=10;k++){
-    var c=[]; SQ.forEach(function(q,i){ if(q.k===k) c.push(i); });
+    var c=[]; SQ.forEach(function(q,i){ if(q.k===k && q.st.indexOf(st)>=0) c.push(i); });
+    if(!c.length) SQ.forEach(function(q,i){ if(q.k===k && q.st.indexOf('pre')>=0) c.push(i); });
     var fresh=c.filter(function(i){ return seen.indexOf(i)<0; });
     var pool=fresh.length?fresh:c;
     out.push(pool[Math.floor(Math.random()*pool.length)]);
   }
   return out;
 }
+/* 最初に関係の段階を聞く（前回の選択を残す） */
 function startSQ(){
-  SQSET=pickSet(); sqi=0; sqans=[];
+  var h='<p class="qt mincho sqq">いまの関係にいちばん近いのは？</p><p class="sqsit">場面と「いちばん良い返し」が、関係の段階で変わります。</p>';
+  var o='';
+  STAGES.forEach(function(s){ o+='<button class="opt'+(STAGE===s.id?' on':'')+'" onclick="startSQ2(\''+s.id+'\')"><b>'+esc(s.n)+'</b><br><span class="od">'+esc(s.d)+'</span></button>'; });
+  setHt('sqsegs',''); setTx('sqn','');
+  setHt('sqBody',h); setHt('sqOpts',o);
+  go('sq');
+}
+function startSQ2(st){
+  STAGE=st||STAGE||'pre'; lsSet('yomitoki:stage',STAGE);
+  SQSET=pickSet(STAGE); sqi=0; sqans=[];
   var sg=document.getElementById('sqsegs'); sg.innerHTML='';
   for(var k=0;k<SQSET.length;k++){ var d=document.createElement('span'); d.className='seg'; sg.appendChild(d); }
   go('sq'); sqRender();
 }
+function retakeSQ(){ if(STAGE) startSQ2(STAGE); else startSQ(); }
 function sqRender(){
   var q=SQ[SQSET[sqi]];
   var sgs=document.querySelectorAll('#sqsegs .seg');
@@ -4364,195 +4511,230 @@ function sqRender(){
   window.scrollTo(0,0);
 }
 function sqPick(v){ sqans[sqi]=v; sqi++; if(sqi<SQSET.length) sqRender(); else sqFinish(); }
-function sqBack(){ if(sqi>0){ sqi--; sqRender(); } else { go(MYTYPE?'ctres':'setup'); } }
+function sqBack(){ if(sqi>0){ sqi--; sqRender(); } else { startSQ(); } }
 function calcScore(set,ans){
-  var tot=0, ds={}, dn={}, lost={};
+  var tot=0, ds={}, dn={}, lost={}, minS=10;
   DIMK.forEach(function(k){ ds[k]=0; dn[k]=0; lost[k]=0; });
   set.forEach(function(qi,i){
-    var q=SQ[qi], s=q.o[ans[i]].s; tot+=s;
+    var q=SQ[qi], s=q.o[ans[i]].s; tot+=s; minS=Math.min(minS,s);
     q.d.forEach(function(k){ ds[k]+=s; dn[k]+=10; lost[k]+=10-s; });
   });
   var dim={}; DIMK.forEach(function(k){ dim[k]=dn[k]?Math.round(ds[k]/dn[k]*100):0; });
-  return {total:tot, dim:dim, lost:lost, set:set.slice(), ans:ans.slice(), at:Date.now()};
+  return {total:tot, dim:dim, lost:lost, min:minS, set:set.slice(), ans:ans.slice(), at:Date.now()};
 }
 function sqFinish(){
-  SCORE=calcScore(SQSET,sqans);
+  SCORE=calcScore(SQSET,sqans); SCORE.st=STAGE;
   var hist=lsGet('yomitoki:scores',[]);
-  SCORE.prev=hist.length?hist[hist.length-1].s:null;
-  hist.push({s:SCORE.total,t:SCORE.at,d:SCORE.dim}); lsSet('yomitoki:scores',hist.slice(-20));
-  var seen=lsGet('yomitoki:sqseen',[]); SQSET.forEach(function(i){ if(seen.indexOf(i)<0) seen.push(i); }); if(seen.length>=SQ.length) seen=SQSET.slice(); lsSet('yomitoki:sqseen',seen);
-  lsSet('yomitoki:last',{set:SCORE.set,ans:SCORE.ans,at:SCORE.at,prev:SCORE.prev});
-  SHARE.code=null; SHARE.p=null;
+  var prev=null; for(var i=hist.length-1;i>=0;i--) if((hist[i].st||'pre')===STAGE){ prev=hist[i]; break; }
+  SCORE.prev=prev?prev.s:null; SCORE.prevDim=prev?prev.d:null;
+  hist.push({s:SCORE.total,t:SCORE.at,d:SCORE.dim,st:STAGE}); lsSet('yomitoki:scores',hist.slice(-20));
+  var seen=lsGet('yomitoki:sqseen',[]); SQSET.forEach(function(i){ if(seen.indexOf(i)<0) seen.push(i); });
+  var avail=SQ.filter(function(q){ return q.st.indexOf(STAGE)>=0; }).length;
+  if(seen.filter(function(i){ return SQ[i]&&SQ[i].st.indexOf(STAGE)>=0; }).length>=avail) seen=SQSET.slice();
+  lsSet('yomitoki:sqseen',seen);
+  lsSet('yomitoki:last',{set:SCORE.set,ans:SCORE.ans,at:SCORE.at,prev:SCORE.prev,prevDim:SCORE.prevDim,st:STAGE});
+  SHMODE='score'; SHARE.code=null; SHARE.p=null;
   showScore();
 }
 function loadLast(){
   var L=lsGet('yomitoki:last',null); if(!L||!L.set||!L.ans) return null;
-  try{ var s=calcScore(L.set,L.ans); s.at=L.at; s.prev=L.prev; return s; }catch(e){ return null; }
+  try{ var s=calcScore(L.set,L.ans); s.at=L.at; s.prev=L.prev; s.prevDim=L.prevDim; s.st=L.st||'pre'; return s; }catch(e){ return null; }
 }
 
 /* ---- 点数帯（どの帯でも突き放さない） ---- */
-function scoreBand(s){
+function scoreBand(s,minS){
   if(s>=85) return {n:'かなりの連絡上手',d:'ほとんどの場面で、相手が返しやすい選び方ができています。ここから先は「相手のタイプに合わせる」で、もう一段上がります。'};
-  if(s>=70) return {n:'安定している',d:'大きく外す場面はありません。下の3つを意識すると、相手から「話しやすい人」と思われる回数が増えます。'};
+  if(s>=70) return {n:'安定している',d:(minS!=null&&minS<=3?'全体は安定しています。ただ1問だけ、相手を傷つけやすい選び方がありました（答え合わせで赤い問題）。':'大きく外す場面はありません。')+'下の3つを意識すると、相手から「話しやすい人」と思われる回数が増えます。'};
   if(s>=55) return {n:'あと一歩',d:'気持ちはちゃんとあるのに、届け方で少し損をしています。下の3つは、どれも明日から使えます。'};
   return {n:'伸びしろが大きい',d:'点数が低いのは、センスがないからではありません。「知らなかった」だけのことがほとんどです。下の3つを変えるだけで、点数ははっきり上がります。'};
 }
-
+function isKon(){ return (SCORE&&SCORE.st||STAGE)==='kon'; }
+function exOf(t){ return (isKon()&&t.exk)?t.exk:t.ex; }
 var TIPD={
- emp:[{h:'答えより先に、気持ちを受け取る',b:'重い話やつらい話には、励ましや意見の前に、気持ちを受け取る1行を。',ex:'「何かあった？今日はゆっくり返せるよ」'},
-      {h:'相手の言葉を1つ拾って返す',b:'「〇〇がしんどかったんだね」と相手の言葉をそのまま使うと、「ちゃんと読んでくれた」が伝わります。',ex:'「仕事、ずっと詰まってたんだね」'}],
- dist:[{h:'近づくのは、相手より半歩だけ',b:'返事の長さと回数は、相手より少しだけ多いくらいに。問い詰める・何度も確かめるのは、距離を縮めません。',ex:'相手が2行なら、こちらは2〜3行'},
-       {h:'引くときは、理由を言葉にして渡す',b:'眠い・忙しいときに黙るより、ひと言そえて引くほうが、次が来やすくなります。',ex:'「眠くて頭回ってないから、続き明日聞かせて」'}],
- time:[{h:'待つ時間を先に決めておく',b:'既読のまま止まったら、1週間あけて返事のいらない軽い1通。お礼はその日のうちに。',ex:'「この前話してた映画、配信きてたよ」'},
-       {h:'相手の時間帯に合わせる',b:'相手がよく返してくる時間に送ると、返事が来やすい。深夜の長話は、終わりの時間を自分で作る。',ex:'「明日早いから、少しだけね」'}],
- inv:[{h:'誘うときは、日にちと場所をセットで',b:'「今度」ではなく、行き先と2択の日にちを出す。断られたら一度引いて、ボールを相手に渡す。',ex:'「〇〇の店、来週の金曜か土曜どう？」'},
-      {h:'相手の「行ってみたい」を逃さない',b:'相手が興味を見せた瞬間が、いちばんの誘いどき。その場で日にちまで出す。',ex:'「行こうよ！来週の土曜とかどう？」'}],
- light:[{h:'不安なときほど、送るのは1通まで',b:'返事がないときの連投・確認・謝罪は逆効果。スマホを置いて、翌日に軽い話題を1通。',ex:'送りたくなったら、下書きに入れて翌朝読み直す'},
-        {h:'返事のいらない1通を持っておく',b:'答えなくていい話題は、止まった会話を再開させやすい。重くならずに「つながってる」を作れます。',ex:'「駅前に新しいパン屋できてた」'}]
+ emp:[{h:'答えより先に、気持ちを受け取る',b:'重い話やつらい話には、励ましや意見の前に、気持ちを受け取る1行を。',ex:'「何かあった？今日はゆっくり返せるよ」',exk:'「大変でしたね。よろしければお話を聞かせてください」'},
+      {h:'相手の言葉を1つ拾って返す',b:'「〇〇がしんどかったんだね」と相手の言葉をそのまま使うと、「ちゃんと読んでくれた」が伝わります。',ex:'「仕事、ずっと詰まってたんだね」',exk:'「お仕事、ずっと立て込んでいらしたんですね」'}],
+ dist:[{h:'近づくのは、相手より半歩だけ',b:'返事の長さと回数は、相手より少しだけ多いくらいに。問い詰める・何度も確かめるのは、距離を縮めません。',ex:'相手が2行なら、こちらは2〜3行',exk:'お相手が2行なら、こちらも2〜3行'},
+       {h:'引くときは、理由を言葉にして渡す',b:'眠い・忙しいときに黙るより、ひと言そえて引くほうが、次が来やすくなります。',ex:'「眠くて頭回ってないから、続き明日聞かせて」',exk:'「明日が早いので、続きはまたお聞かせください」'}],
+ time:[{h:'待つ時間を先に決めておく',b:'既読のまま止まったら、何日待つかを先に決める。お礼はその日のうちに。',ex:'「この前話してた映画、配信きてたよ」（1週間あけて、返事のいらない1通）',exk:'「先日お話しした映画、配信が始まっていました」（数日あけて、返事のいらない1通）'},
+       {h:'相手の時間帯に合わせる',b:'相手がよく返してくる時間に送ると、返事が来やすい。深夜の長話は、終わりの時間を自分で作る。',ex:'「明日早いから、少しだけね」',exk:'「本日もありがとうございました。おやすみなさい」'}],
+ inv:[{h:'誘うときは、日にちと場所をセットで',b:'「今度」ではなく、行き先と2択の日にちを出す。断られたら一度引いて、ボールを相手に渡す。',ex:'「〇〇の店、来週の金曜か土曜どう？」',exk:'「〇〇のお店、来週の土曜か日曜のお昼はいかがですか」'},
+      {h:'相手の「行ってみたい」を逃さない',b:'相手が興味を見せた瞬間が、いちばんの誘いどき。その場で日にちまで出す。',ex:'「行こうよ！来週の土曜とかどう？」',exk:'「ぜひご一緒させてください。来週の土曜はいかがですか」'}],
+ light:[{h:'不安なときほど、送るのは1通まで',b:'返事がないときの連投・確認・謝罪は逆効果。スマホを置いて、翌日に軽い話題を1通。',ex:'送りたくなったら、下書きに入れて翌朝読み直す',exk:'送りたくなったら、下書きに入れて翌朝読み直す'},
+        {h:'返事のいらない1通を持っておく',b:'答えなくていい話題は、止まった会話を再開させやすい。重くならずに「つながってる」を作れます。',ex:'「駅前に新しいパン屋できてた」',exk:'「駅前に新しいパン屋さんができていました」'}]
 };
+/* dim=この提案が重なる項目（1番目の提案と同じ項目なら飛ばす） */
 var TIPP=[
- {f:function(p){return p.oi>=2}, h:'追いLINEは「1日あけて1通」ルール', b:'あなたは返事がないと、つい送りたくなるタイプ。送る前に下書きに入れて、翌日もまだ送りたければ1通だけ。', ex:'1通目に返事がないうちは、2通目を送らない'},
- {f:function(p){return p.kd>=2}, h:'既読スルーは「脈なし」とは限らない', b:'既読のまま止まるのは、忙しい・あとで返そうとして忘れた、が大半です。不安になったら、相手のふだんの返信ペースを思い出す。', ex:'「いつもは何時間後に返ってくる人か」を先に見る'},
- {f:function(p){return p.iv>=2}, h:'月に1回は、自分から誘う', b:'誘ってほしい派どうしだと、何も起きないまま終わりがち。日にちと場所をセットにした誘いを、自分からも1回。', ex:'「〇〇行ってみたいんだけど、来週どう？」'},
- {f:function(p){return p.iv===0}, h:'2回断られたら、次は相手にボールを', b:'誘う派のあなたは、断られてもすぐ次を出しがち。2回続いたら、相手から声がかかるのを待つ。', ex:'「行けそうなとき、そっちから声かけて」'},
- {f:function(p){return p.ch===2}, h:'電話の前に、LINEで一言', b:'電話派の気持ちは伝わりやすい反面、相手によっては急な電話が負担になります。先に聞くと断られにくい。', ex:'「5分だけ電話いい？」'},
- {f:function(p){return p.fq===0}, h:'毎日のLINEは、相手のペースを見てから', b:'連絡多め派。相手が少なめ派なら、1日1往復でも十分つながっています。', ex:'相手の返信が半日あくなら、こちらも1日1〜2通に'},
- {f:function(p){return p.fq===3}, h:'用事がなくても、ときどき「どうでもいい1通」', b:'用事だけ派は、相手から見ると関心がないように映ることがあります。', ex:'「さっき〇〇見て思い出した」'}
+ {f:function(p){return p.ch===2&&(SCORE&&SCORE.st)==='couple'}, dim:'dist', h:'電話の回数より、電話を楽しみにできる形を', b:'電話派のあなた。毎日の習慣が相手の負担になっていないか、ときどき回数を相談すると長続きします。', ex:'「毎日じゃなくて、週3くらいにしてみる？」'},
+ {f:function(p){return p.oi>=2}, dim:'light', h:'追いLINEは「1日あけて1通」ルール', b:'あなたは返事がないと、つい送りたくなるタイプ。送る前に下書きに入れて、翌日もまだ送りたければ1通だけ。', ex:'1通目に返事がないうちは、2通目を送らない'},
+ {f:function(p){return p.kd>=2}, dim:'light', h:'既読スルーは「脈なし」とは限らない', b:'既読のまま止まるのは、忙しい・あとで返そうとして忘れた、が大半です。不安になったら、相手のふだんの返信ペースを思い出す。', ex:'「いつもは何時間後に返ってくる人か」を先に見る'},
+ {f:function(p){return p.iv>=2}, dim:'inv', h:'月に1回は、自分から誘う', b:'誘ってほしい派どうしだと、何も起きないまま終わりがち。日にちと場所をセットにした誘いを、自分からも1回。', ex:'「〇〇行ってみたいんだけど、来週どう？」', exk:'「〇〇に行ってみたいのですが、来週はいかがですか」'},
+ {f:function(p){return p.iv===0}, dim:'inv', h:'2回流れたら、次は相手にボールを', b:'誘う派のあなたは、断られてもすぐ次を出しがち。2回続いたら、相手から声がかかるのを待つ。', ex:'「行けそうなとき、そっちから声かけて」', exk:'「ご都合のよい時期がありましたら、お気軽に教えてください」'},
+ {f:function(p){return p.ch===2}, dim:'dist', h:'電話の前に、LINEで一言', b:'電話派の気持ちは伝わりやすい反面、相手によっては急な電話が負担になります。先に聞くと断られにくい。', ex:'「5分だけ電話いい？」', exk:'「少しだけお電話してもよろしいですか」'},
+ {f:function(p){return p.fq===0}, dim:'dist', h:'毎日のLINEは、相手のペースを見てから', b:'連絡多め派。相手が少なめ派なら、1日1往復でも十分つながっています。', ex:'相手の返信が半日あくなら、こちらも1日1〜2通に'},
+ {f:function(p){return p.fq===3}, dim:'time', h:'用事がなくても、ときどき「どうでもいい1通」', b:'用事だけ派は、相手から見ると関心がないように映ることがあります。', ex:'「さっき〇〇見て思い出した」', exk:'「〇〇を見かけて、先日のお話を思い出しました」'}
 ];
 var TIPT={
- S:{h:'遅くなるときは、先に一言',b:'返事がゆっくりめのあなた。ひと言あるだけで、遅さが相手の不安に変わりません。',ex:'「今バタバタしてて、夜ちゃんと返すね」'},
- T:{h:'好意は1回、ことばで出す',b:'気持ちをひねるタイプは、好きな人ほど素っ気なく見えがち。「楽しかった」「また会いたい」を1回だけまっすぐに。',ex:'「今日ほんとに楽しかった」'},
- L:{h:'長文は3行まで。続きは会って話す',b:'言葉で伝えるのはあなたの強み。ただ短文派の相手には、読む負担が返事の遅さになります。',ex:'言いたいことを1つに絞って、残りは「会ったとき話すね」'},
- B:{h:'スタンプだけで終わらせない',b:'短く返すあなた。一言でいいので、相手の話に触れた言葉を添えると、素っ気なさが消えます。',ex:'スタンプ＋「それ気になる！」'},
- C:{h:'好きな人にだけ、素っ気なくならない',b:'相手で態度を変えられるのは器用さ。ただ好きな人の前でだけ慎重になりすぎると、関心がないように見えます。',ex:'ほかの人に返すのと同じ速さで、一度返してみる'},
+ S:{h:'遅くなるときは、先に一言',b:'返事がゆっくりめのあなた。ひと言あるだけで、遅さが相手の不安に変わりません。',ex:'「今バタバタしてて、夜ちゃんと返すね」',exk:'「立て込んでおりまして、夜にあらためてお返事します」'},
+ T:{h:'好意は1回、ことばで出す',b:'気持ちをひねるタイプは、好きな人ほど素っ気なく見えがち。「楽しかった」「また会いたい」を1回だけまっすぐに。',ex:'「今日ほんとに楽しかった」',exk:'「本日は本当に楽しかったです」'},
+ L:{h:'長文は3行まで。続きは会って話す',b:'言葉で伝えるのはあなたの強み。ただ短文派の相手には、読む負担が返事の遅さになります。',ex:'言いたいことを1つに絞って、残りは「会ったとき話すね」',exk:'お伝えしたいことを1つに絞って、残りは「お会いしたときに」'},
+ B:{h:'スタンプだけで終わらせない',b:'短く返すあなた。一言でいいので、相手の話に触れた言葉を添えると、素っ気なさが消えます。',ex:'スタンプ＋「それ気になる！」',exk:'「そのお話、気になります」と一言添える'},
+ CT:{h:'好きな人にだけ、素っ気なくならない',b:'相手で態度を変えられるのは器用さ。ただ好きな人の前でだけ慎重になりすぎると、関心がないように見えます。',ex:'ほかの人に返すのと同じ速さで、一度返してみる'},
+ CD:{h:'全力は、相手の温度を見てから',b:'好きな人にだけ全力になれるのは魅力。ただ相手がまだ様子見の段階だと、温度差に見えます。',ex:'相手の返事の長さを見て、半歩だけ上回る'},
  Q:{h:'即レスは武器。でも同じ速さを求めない',b:'すぐ返せるのは安心感になります。相手が遅くても、それは気持ちの量とは別のことが多い。',ex:'相手が半日あけたら、こちらも少し間をあけてみる'},
  D:{h:'出しすぎた日の次の日は、少し控えめに',b:'気持ちがそのまま出るのは魅力。ただ毎日全開だと、相手が受け止めきれない日もあります。',ex:'盛り上がった翌日は、短めの1通にしてみる'},
- F:{h:'好きな人には、少しだけ特別扱い',b:'誰にでも同じなのは誠実さ。ただ好意が伝わりにくいので、好きな人には返事を少しだけ早く・長く。',ex:'相手の話に、質問を1つ添えて返す'}
+ F:{h:'好きな人には、少しだけ特別扱い',b:'誰にでも同じなのは誠実さ。ただ好意が伝わりにくいので、好きな人には返事を少しだけ早く・長く。',ex:'相手の話に、質問を1つ添えて返す',exk:'お相手の話に、質問を1つ添えて返す'}
 };
 function tipsOf(sc,code,prof){
-  var out=[], used={};
+  var out=[];
   var dims=DIMK.slice().sort(function(a,b){ return sc.dim[a]-sc.dim[b] || sc.lost[b]-sc.lost[a]; });
-  function dimTip(k){ var adv=sc.dim[k]>=80; var t=TIPD[k][adv?1:0]; return {h:t.h,b:t.b,ex:t.ex,tag:DIMS[k]+' '+sc.dim[k]+'点',gain:sc.lost[k]}; }
-  out.push(dimTip(dims[0])); used[dims[0]]=1;
-  var pt=prof?TIPP.filter(function(t){ return t.f(prof); })[0]:null;
-  if(pt) out.push({h:pt.h,b:pt.b,ex:pt.ex,tag:'あなたの好みから'});
-  else { out.push(dimTip(dims[1])); used[dims[1]]=1; }
+  function dimTip(k){ var adv=sc.dim[k]>=80; var t=TIPD[k][adv?1:0]; return {h:t.h,b:t.b,ex:exOf(t),tag:DIMS[k]+' '+sc.dim[k]+'点',gain:sc.lost[k]}; }
+  out.push(dimTip(dims[0]));
+  var pt=prof?TIPP.filter(function(t){ return t.f(prof) && t.dim!==dims[0]; })[0]:null;
+  if(pt) out.push({h:pt.h,b:pt.b,ex:exOf(pt),tag:'あなたの好みから'});
+  else out.push(dimTip(dims[1]));
   if(code&&code.length===4){
-    var risky=['S','T','L','B','C'], pick=null;
-    var ord=[0,1,2,3].sort(function(a,b){ return Math.abs((MYPCT||[50,50,50,50])[b]-50)-Math.abs((MYPCT||[50,50,50,50])[a]-50); });
-    for(var i=0;i<ord.length&&!pick;i++) if(risky.indexOf(code[ord[i]])>=0) pick=code[ord[i]];
+    var pc=MYPCT||[50,50,50,50], risky=['S','T','L','B','C'], pick=null;
+    var ord=[0,1,2,3].sort(function(a,b){ return Math.abs(pc[b]-50)-Math.abs(pc[a]-50); });
+    for(var i=0;i<ord.length&&!pick;i++) if(risky.indexOf(code[ord[i]])>=0 && Math.abs(pc[ord[i]]-50)>=7) pick=code[ord[i]];
     if(!pick) pick=code[ord[0]];
-    var t=TIPT[pick]; out.push({h:t.h,b:t.b,ex:t.ex,tag:nameOf(code)+'だから'});
-  } else { out.push(dimTip(dims[2])); }
+    if(pick==='C') pick=(code[1]==='D'?'CD':'CT');
+    var t=TIPT[pick]; out.push({h:t.h,b:t.b,ex:exOf(t),tag:nameOf(code)+'だから'});
+  } else out.push(dimTip(dims[2]));
   return out.slice(0,3);
 }
-function dimBars(dim){
+function dimBars(dim,prev){
   var h='<div class="dimb">';
   DIMK.forEach(function(k){
-    var v=dim[k];
-    h+='<div class="r"><span class="lb">'+DIMS[k]+'</span><span class="tr"><span class="f" style="width:'+Math.max(3,v)+'%"></span></span><span class="pv mono">'+v+'</span></div>';
+    var v=dim[k], dv=(prev&&prev[k]!=null)?v-prev[k]:null;
+    h+='<div class="r"><span class="lb">'+DIMS[k]+'</span><span class="tr"><span class="f" style="width:'+Math.max(3,v)+'%"></span></span><span class="pv mono">'+v+'</span>'+
+       (dv!=null?'<span class="dv mono '+(dv>0?'up':(dv<0?'dn':''))+'">'+(dv>0?'+':'')+(dv||'±0')+'</span>':'')+'</div>';
   });
   return h+'</div>';
 }
 function showScore(){
   var sc=SCORE||loadLast(); if(!sc){ startSQ(); return; }
-  SCORE=sc;
-  var b=scoreBand(sc.total), code=MYTYPE&&CT[MYTYPE]?MYTYPE:'';
+  SCORE=sc; if(sc.st) STAGE=sc.st;
+  var b=scoreBand(sc.total,sc.min), code=MYTYPE&&CT[MYTYPE]?MYTYPE:'';
   var h='<div class="scard">';
-  if(code) h+='<div class="sct">'+ill(code,'sm me')+'<span><span class="k">あなたの連絡タイプ</span><b>'+esc(nameOf(code))+'</b></span></div>';
+  if(code) h+='<div class="sct">'+ill(code,'sm me')+'<span><span class="k">あなたの連絡タイプ</span><b>'+esc(nameOf(code))+'</b><span class="k">関係：'+esc(stageN(sc.st||'pre'))+'</span></span></div>';
   h+='<div class="sbig"><span class="k">連絡力</span><span class="n mincho">'+sc.total+'</span><span class="u">/ 100点</span></div>';
-  if(sc.prev!=null) h+='<p class="sdelta">前回 '+sc.prev+'点 → 今回 '+sc.total+'点'+(sc.total>sc.prev?'　<b>+'+(sc.total-sc.prev)+'点</b>':'')+'</p>';
+  if(sc.prev!=null){
+    var d=sc.total-sc.prev;
+    h+='<p class="sdelta">前回 '+sc.prev+'点 → 今回 '+sc.total+'点　<b class="'+(d>=0?'up':'dn')+'">'+(d>0?'+':'')+(d||'±0')+'点</b></p>';
+    h+='<p class="note" style="margin:0;text-align:center">今回は別の問題です。問題の違いだけでも ±10点ほど動きます。項目ごとの変化を見てください。</p>';
+  }
   h+='<p class="sband"><b>'+b.n+'</b></p><p class="sbd">'+b.d+'</p>';
-  h+=dimBars(sc.dim)+'</div>';
+  h+=dimBars(sc.dim,sc.prevDim)+'</div>';
   setHt('scTop',h);
-  var tips=tipsOf(sc,code,PROF), th='';
-  var gain=0; tips.forEach(function(t){ if(t.gain) gain+=t.gain; });
+  var tips=tipsOf(sc,code,PROF), th='', gain=0;
+  tips.forEach(function(t){ if(t.gain) gain+=t.gain; });
   tips.forEach(function(t,i){
     th+='<div class="tip"><span class="no mono">'+(i+1)+'</span><div class="bd"><span class="tg">'+esc(t.tag)+'</span><h4>'+esc(t.h)+'</h4><p>'+esc(t.b)+'</p><p class="ex">例）'+esc(t.ex)+'</p></div></div>';
   });
   setHt('scTips',th);
   setHt('scGain', gain>0?'<p class="note" style="margin:0">今回の問題なら、上の項目で <b>最大 +'+Math.min(gain,100-sc.total)+'点</b> 上がる余地があります。</p>':'<p class="note" style="margin:0">今回の問題では、上の項目は満点でした。ここから先は「相手に合わせる」力です。</p>');
-  /* 答え合わせ */
-  var rv='';
+  /* 答え合わせ：10点でなかった問題を先に、10点の問題は1行で */
+  var rv='', ok='';
   sc.set.forEach(function(qi,i){
     var q=SQ[qi], a=q.o[sc.ans[i]], best=q.o.filter(function(z){return z.s===10})[0];
-    rv+='<div class="rv'+(a.s===10?' ok':'')+'"><p class="rq"><span class="mono">'+(i+1)+'</span> '+esc(q.sit)+(q.msg?'「'+esc(q.msg)+'」':'')+'</p>'+
+    if(a.s===10){ ok+='<p class="rok"><span class="mono">'+(i+1)+'</span> '+esc(q.sit.replace(/。$/,''))+' … <b>10点</b></p>'; return; }
+    rv+='<div class="rv'+(a.s<=3?' bad':'')+'"><p class="rq"><span class="mono">'+(i+1)+'</span> '+esc(q.sit)+(q.msg?'「'+esc(q.msg)+'」':'')+'</p>'+
         '<p class="ra">あなた：'+esc(a.t)+' <b class="mono">'+a.s+'点</b></p>'+
         '<p class="rw">'+esc(a.w)+'</p>'+
-        (a.s<10&&best?'<p class="rb">いちばん良い返し：'+esc(best.t)+'<br><span>'+esc(best.w)+'</span></p>':'')+'</div>';
+        (best?'<p class="rb">いちばん良い返し：'+esc(best.t)+'<br><span>'+esc(best.w)+'</span></p>':'')+'</div>';
   });
-  setHt('scReview',rv);
+  setHt('scReview',rv+(ok?'<div class="rokw"><p class="rokh">10点だった問題</p>'+ok+'</div>':''));
   renderPTEntry();
   go('score');
 }
 
 /* ---- ホーム ---- */
 function renderHome(){
-  var h='';
-  var L=loadLast(), hist=lsGet('yomitoki:scores',[]);
+  var h='', L=loadLast();
   if(MYTYPE&&CT[MYTYPE]){
     h+='<div class="nobase" style="display:flex;align-items:center;gap:11px;text-align:left">'+ill(MYTYPE,'sm me')+'<span style="flex:1">あなたは <b>'+esc(nameOf(MYTYPE))+'</b>'+(L?'／連絡力 <b>'+L.total+'点</b>':'')+'<br>'+
-       (L?'<button class="btn g" style="margin-top:8px" onclick="showScore()">前回の結果を見る</button>':'<button class="btn g" style="margin-top:8px" onclick="startSQ()">続きの場面テストへ（10問）</button>')+'</span></div>';
+       (L?'<button class="btn g" style="margin-top:8px" onclick="showScore()">前回の結果を見る</button>':'<button class="btn g" style="margin-top:8px" onclick="startSQ()">続きの場面テストへ（10問）</button>')+
+       '<button class="lnk" onclick="startCT(\'setup\')">タイプ診断からやりなおす</button></span></div>';
   }
   setHt('myTypeNow',h);
-  setTx('ctStart', L ? '別の問題でもう一度査定する' : (MYTYPE?'連絡力査定をはじめる（無料）':'連絡力査定をはじめる（無料）'));
-  var inv=INV?'<div class="invb"><b>友だちから「連絡タイプ診断」が届いています</b><span>12問・約2分。終わったら結果を送り返すと、二人の相性が分かります。</span></div>':'';
-  setHt('invBox',inv);
+  setTx('ctStart', INV ? '診断をはじめる（12問・無料）' : (L ? '別の問題でもう一度査定する' : '連絡力査定をはじめる（無料）'));
+  setHt('invBox', INV?'<div class="invb"><b>あなたに「連絡タイプ診断」が届いています</b><span>12問・約2分。終わったら、結果を送ってくれた人に返せます（返すかどうかは、あなたが決められます）。</span></div>':'');
 }
 function homeStart(){
   if(INV){ startCT('setup'); return; }
-  if(MYTYPE&&CT[MYTYPE]&&PROF){ startSQ(); return; }
+  if(MYTYPE&&CT[MYTYPE]&&PROF){ if(loadLast()) retakeSQ(); else startSQ(); return; }
   startCT('setup');
 }
 showMyNow=function(){ MYTYPE=loadMy(); MYPCT=loadPct(); PROF=lsGet('yomitoki:prof',null); try{ renderHome(); }catch(e){} };
 
-/* タイプ結果の画面：次は場面テストへ */
+/* ---- タイプ結果の画面 ---- */
+var LOVE2={
+ F:'好きな人にも、<b>ほかの人と同じ調子</b>で返します。安心感はありますが、特別扱いは伝わりにくい。',
+ QDL:'好きな人には<b>さらに速く、長くなります</b>。隠せません。',
+ QDB:'好きな人には<b>さらに速く、回数が増えます</b>。短いまま、ぽんぽん返します。',
+ QT:'返事は速いのに、好きな人ほど<b>文面が素っ気なく</b>なります。',
+ SD:'好きな人には<b>いつもより速くなります</b>。普段が遅いぶん、差が出やすい。',
+ ST:'好きな人ほど<b>もっと遅くなります</b>。考えすぎて返せないタイプ。相手からは関心がないように見えがちです。'
+};
 var _showCTRes=showCTRes;
 showCTRes=function(){
   _showCTRes();
   var c=MYTYPE; if(!CT[c]) return;
+  SHMODE='type'; SHARE.code=null; SHARE.p=null;
+  var lv = c[3]==='F' ? LOVE2.F : (c[0]+c[1]==='QD' ? LOVE2['QD'+c[2]] : LOVE2[c[0]+c[1]]);
+  setHt('ctLove','<b>気になる人に対しては</b><br>'+lv);
   var pr=PROF?['fq','ch','iv','kd','oi'].map(function(k){ return PROF[k]==null?'':'<span>'+PROFN[k][PROF[k]]+'</span>'; }).join(''):'';
   setHt('ctProf', pr?'<div class="ctbox"><h5>あなたの連絡の好み</h5><div class="pchips">'+pr+'</div></div>':'');
   var back='';
   if(INV){
-    var ic=parseCode(INV), cp=ic?compat(c,PROF||{},ic.code,ic.prof):null;
     back='<div class="ctbox invret"><h5>送ってくれた人に、結果を返す</h5>'+
-      (cp?'<p style="margin:0;font-size:13.5px;line-height:1.8">送ってくれた人は <b>'+esc(CT[ic.code].n)+'</b>。二人の相性（参考）は <b>'+cp.label+'</b> です。</p>':'')+
-      '<button class="btn" onclick="copyBack(this)">結果をコピーして、LINEで返す</button>'+
-      '<p class="note" style="margin:0">コピーされるのはタイプ名と短いコードだけです。名前などは入りません。</p></div>';
+      '<p style="margin:0;font-size:13px;line-height:1.8;color:var(--soft)">返すと、送ってくれた人の画面で二人の相性が分かります。<b>返す内容は下のとおり</b>です。名前は入りません。</p>'+
+      '<div class="retl" id="retList"></div>'+
+      '<label class="chk"><input type="checkbox" id="retProf" checked onchange="renderRet()"> 連絡の好み（5つ）も一緒に返す</label>'+
+      '<button class="btn" onclick="copyBack(this)">この内容をコピーして、LINEで返す</button>'+
+      '<p class="note" style="margin:0">コピーしたら、送ってくれた人とのトークに貼って送ってください。</p></div>';
   }
-  setHt('ctBack',back);
-  setTx('ctNext','連絡力を査定する（場面10問）→');
+  setHt('ctBack',back); if(INV) renderRet();
+  setTx('ctNext', INV?'自分の連絡力も査定する（場面10問）→':'連絡力を査定する（場面10問）→');
 };
+function retProfOn(){ var e=document.getElementById('retProf'); return !e||e.checked; }
+function renderRet(){
+  var h='<span>タイプ：<b>'+esc(nameOf(MYTYPE))+'</b></span>';
+  if(retProfOn()&&PROF) ['fq','ch','iv','kd','oi'].forEach(function(k){ if(PROF[k]!=null) h+='<span>'+PROFN[k][PROF[k]]+'</span>'; });
+  setHt('retList',h);
+}
 ctNextGo=function(){ if(CTFROM==='ptype'){ ctExit(); return; } startSQ(); };
 ctExit=function(){
   if(CTFROM==='ptype'){ buildPT(); renderMyPick(); go('ptype'); }
   else { showMyNow(); go('setup'); }
 };
 
-/* ---- 招待リンク（#from=QDLF-01230）。ハッシュはサーバーに送られない ---- */
+/* ---- 招待（リンクに自分のタイプは入れない） ---- */
+function fullCode(withProf){ var g=GDEF[MYTYPE]?genOf(MYTYPE):''; return MYTYPE+(withProf&&PROF?'-'+profCode(PROF):'')+(g?'-'+g:''); }
 function parseCode(s){
-  var m=(s||'').toUpperCase().match(/([QS][DT][LB][FC])(?:\s*[-ー－]\s*([0-3X]{5}))?/);
+  var m=(s||'').toUpperCase().match(/([QS][DT][LB][FC])(?:\s*[-ー－]\s*([0-3X]{5}))?(?:\s*[-ー－]\s*([MF]))?/);
   if(!m) return null;
-  return {code:m[1], prof:parseProf((m[2]||'').toLowerCase())};
+  return {code:m[1], prof:parseProf((m[2]||'').toLowerCase()), g:(m[3]||'').toLowerCase()};
 }
-var INV=(function(){ var m=(location.hash||'').match(/from=([A-Za-z0-9\-]+)/); return m&&parseCode(m[1])?m[1]:''; })();
+var INV=/(^#inv\b|from=)/.test(location.hash||'');
 function baseURL(){ return location.href.split('#')[0].split('?')[0]; }
 function copyText(t,btn,done){
   var ok=legacyCopy(t);
   if(!ok && navigator.clipboard) { navigator.clipboard.writeText(t).catch(function(){}); ok=true; }
-  if(btn){ var o=btn.textContent; btn.textContent=done||'コピーしました'; setTimeout(function(){ btn.textContent=o; },1800); }
+  if(btn){ var o=btn.textContent; btn.textContent=done||'コピーしました'; setTimeout(function(){ btn.textContent=o; },2200); }
 }
 function copyBack(btn){
-  var t='連絡タイプ診断やったよ！\n私は【'+nameOf(MYTYPE)+'】でした\nコード：'+fullCode()+'\n\n（このメッセージをよみときに貼ると、相性が見られます）\n'+baseURL();
+  var t='連絡タイプ診断やってみました！\n私は【'+nameOf(MYTYPE)+'】でした\nコード：'+fullCode(retProfOn())+'\n\n（このメッセージを、よみときの「相手から返ってきた結果を貼る」に貼ると、相性が見られます）';
   copyText(t,btn,'コピーしました。LINEに貼って送ってね');
 }
-copyInvite=function(btn){
-  var t='連絡タイプ診断やってみて！12問・2分くらいで終わる\n終わったら結果を送り返してね\n\n'+baseURL()+(MYTYPE?'#from='+fullCode():'');
-  copyText(t,btn,'コピーしました');
-};
+function inviteText(pol){
+  var u=baseURL()+'#inv';
+  return pol ? '「連絡タイプ診断」というものがありまして、よろしければ試してみてください（12問・2分ほどです）。結果を教えていただけるとうれしいです。\n'+u
+             : '連絡タイプ診断やってみて！12問・2分くらいで終わる\n終わったら結果を送り返してね\n'+u;
+}
+copyInvite=function(btn,pol){ copyText(inviteText(pol),btn,'コピーしました'); var s=document.getElementById('invSteps'); if(s) s.style.display='block'; };
 
-/* ---- 相性（参考）。タイプの4軸＋好みから、ルールで出す ---- */
+/* ---- 相性（参考）。どちらから見ても同じになるように対称に計算する ---- */
 function compat(me,mp,pt,pp){
   mp=mp||{}; pp=pp||{};
   var s=80, good=[], bad=[];
@@ -4566,56 +4748,82 @@ function compat(me,mp,pt,pp){
   if(me[3]==='C'&&pt[3]==='C'){ s-=4; bad.push('どちらも相手を見て態度を変えるので、読み合いになりやすい'); }
   if(mp.iv!=null&&pp.iv!=null){
     if(mp.iv>=2&&pp.iv>=2){ s-=12; bad.push('どちらも誘われたい派。放っておくと、何も起きないまま時間がたつ'); }
-    else if((mp.iv<=1)!==(pp.iv<=1)||mp.iv===1||pp.iv===1){ s+=4; good.push('誘う側と誘われる側がはっきりしていて、予定が決まりやすい'); }
+    else if((mp.iv===0&&pp.iv>=2)||(pp.iv===0&&mp.iv>=2)){ s+=4; good.push('誘う側と誘われる側がはっきりしていて、予定が決まりやすい'); }
+    else if(mp.iv<=1&&pp.iv<=1){ s+=2; good.push('どちらからでも誘えるので、予定が止まりにくい'); }
   }
-  if(mp.kd!=null&&mp.kd>=2&&pt[0]==='S'){ s-=7; bad.push('相手はゆっくり返すタイプ。既読スルーが気になるあなたは、不安になりやすい組み合わせ'); }
-  if(pp.kd!=null&&pp.kd>=2&&me[0]==='S'){ s-=7; bad.push('相手は既読スルーが気になる側。ゆっくり返すあなたの間が、相手を不安にさせやすい'); }
-  if(mp.oi!=null&&mp.oi>=2&&pt[0]==='S'){ s-=5; bad.push('返事を待てずに送った2通目が、ゆっくり派の相手には負担になりやすい'); }
-  if(mp.fq!=null&&pp.fq!=null&&Math.abs(mp.fq-pp.fq)>=2){ s-=8; bad.push('ちょうどいい連絡の回数が違う（'+PROFN.fq[mp.fq]+'と'+PROFN.fq[pp.fq]+'）'); }
+  [[me,mp,pt,pp,'相手はゆっくり返すタイプ。既読スルーが気になるあなたは、不安になりやすい組み合わせ','相手は追いLINEをしがち。ゆっくり返すあなたには負担になりやすい'],
+   [pt,pp,me,mp,'あなたはゆっくり返すタイプ。既読スルーが気になる相手を、不安にさせやすい組み合わせ','あなたは追いLINEをしがち。ゆっくり返す相手には負担になりやすい']].forEach(function(z){
+    if(z[1].kd!=null&&z[1].kd>=2&&z[2][0]==='S'){ s-=7; bad.push(z[4]); }
+    if(z[1].oi!=null&&z[1].oi>=2&&z[2][0]==='S'){ s-=5; bad.push(z[5]); }
+  });
+  if(mp.fq!=null&&pp.fq!=null&&Math.abs(mp.fq-pp.fq)>=2){ s-=8; bad.push('ちょうどいい連絡の回数が違う（あなたは'+PROFN.fq[mp.fq]+'、相手は'+PROFN.fq[pp.fq]+'）'); }
   if(mp.ch!=null&&pp.ch!=null){
-    if(mp.ch===2&&pp.ch!==2){ s-=3; bad.push('あなたは電話派、相手はLINEのほうが楽なタイプ'); }
-    if(mp.ch===pp.ch){ s+=3; good.push('話したいときの手段が同じ（'+PROFN.ch[mp.ch]+'）'); }
+    if((mp.ch===2)!==(pp.ch===2)){ s-=3; bad.push(mp.ch===2?'あなたは電話派、相手はLINEのほうが楽なタイプ':'相手は電話派、あなたはLINEのほうが楽なタイプ'); }
+    else if(mp.ch===pp.ch){ s+=3; good.push('話したいときの手段が同じ（'+PROFN.ch[mp.ch]+'）'); }
   }
   s=Math.max(35,Math.min(96,s));
   var label=s>=78?'かみ合いやすい':(s>=62?'コツをつかめば合う':'すれ違いやすい（でも対策できる）');
   return {s:s,label:label,good:good,bad:bad};
 }
 
-/* ---- 相手のタイプを入れる（推測の6問） ---- */
+/* ---- 相手（名前は入れない。相手1・相手2…） ---- */
 var PQ=[
- {t:'相手の返事の速さは？',o:[{t:'たいてい、すぐ来る',a:[0,1]},{t:'数時間後が多い',a:[0,-.4]},{t:'半日〜1日あくことも多い',a:[0,-1]},{t:'日によってバラバラ',a:[0,-.2],c:1}]},
- {t:'相手の一通の長さは？',o:[{t:'長め。何行も書いてくる',a:[2,1]},{t:'1〜2行',a:[2,.3]},{t:'ひとこと・スタンプが多い',a:[2,-1]}]},
- {t:'相手は、気持ちを言葉にする？',o:[{t:'「楽しい」「うれしい」をよく書く',a:[1,1]},{t:'たまに書く',a:[1,.2]},{t:'あまり書かない。読みにくい',a:[1,-1]}]},
- {t:'ほかの人への態度と比べると？',o:[{t:'誰にでも同じ感じ',a:[3,1]},{t:'相手によって変わる人だと思う',a:[3,-1]},{t:'分からない',a:[3,.1]}]},
- {t:'ごはんやデートの誘いは、どちらから？',o:[{t:'相手から誘ってくることが多い',p:{iv:0}},{t:'半々くらい',p:{iv:1}},{t:'たいてい、こちらから',p:{iv:2}},{t:'まだ誘ったことがない・分からない'}]},
+ {t:'相手の返事の速さは？',o:[{t:'たいてい、すぐ来る',a:[0,1]},{t:'数時間後が多い',a:[0,-.4]},{t:'半日〜1日あくことも多い',a:[0,-1]},{t:'日によってバラバラ・分からない',a:[0,0],c:1}]},
+ {t:'相手の一通の長さは？',o:[{t:'長め。何行も書いてくる',a:[2,1]},{t:'1〜2行',a:[2,-.3]},{t:'ひとこと・スタンプが多い',a:[2,-1]}]},
+ {t:'相手は、気持ちを言葉にする？',o:[{t:'「楽しい」「うれしい」をよく書く',a:[1,1]},{t:'たまに書く・分からない',a:[1,0]},{t:'あまり書かない。読みにくい',a:[1,-1]}]},
+ {t:'ほかの人への態度と比べると？',o:[{t:'誰にでも同じ感じ',a:[3,1]},{t:'相手によって変わる人だと思う',a:[3,-1]},{t:'分からない',a:[3,0]}]},
+ {t:'ごはんやデートの誘いは？',o:[{t:'相手から誘ってくることが多い',p:{iv:0}},{t:'半々くらい',p:{iv:1}},{t:'たいてい、こちらから誘っている',p:{iv:2,me:1}},{t:'最近、断られることが多い',p:{decl:1}},{t:'まだ誘ったことがない・分からない'}]},
  {t:'相手の連絡の回数は？',o:[{t:'毎日のように来る',p:{fq:0}},{t:'2〜3日に1回くらい',p:{fq:2}},{t:'用事があるときだけ',p:{fq:3}},{t:'分からない'}]}
 ];
-var PT=lsGet('yomitoki:pt',null), pqi=0, pqans=[];
+var PTS=lsGet('yomitoki:pts',null), PTCUR=lsGet('yomitoki:ptcur',0), pqi=0, pqans=[];
+(function(){ if(!PTS){ PTS=[]; var old=lsGet('yomitoki:pt',null); if(old&&old.code){ var r={id:1,st:STAGE||'pre',g:''}; r[old.src==='real'?'real':'guess']={code:old.code,prof:old.prof||{}}; PTS.push(r); PTCUR=1; lsSet('yomitoki:pts',PTS); } try{ localStorage.removeItem('yomitoki:pt'); }catch(e){} } })();
+function savePTS(){ lsSet('yomitoki:pts',PTS); lsSet('yomitoki:ptcur',PTCUR); }
+function ptById(id){ for(var i=0;i<PTS.length;i++) if(PTS[i].id===id) return PTS[i]; return null; }
+function curPT(){ return ptById(PTCUR); }
+function ptEff(p){ return p&&(p.real||p.guess)||null; }
+function ptLab(p){ return '相手'+p.id; }
+function illG(c,g,cls){
+  if(g&&GDEF[c]&&ART2[c]&&g!==GDEF[c]) return '<span class="fig '+(cls||'')+'"><img class="ill" src="'+ART2[c]+'" alt="'+esc(CT[c].n)+'"></span>';
+  return ill(c,cls);
+}
+function ptName(p){ var e=ptEff(p); return e?nameG(e.code,p.g):''; }
 function renderPTEntry(){
   var h='';
-  if(PT&&CT[PT.code]){
-    var cp=compat(MYTYPE||'QDLF',PROF||{},PT.code,PT.prof||{});
-    h+='<div class="ptsum">'+ill(PT.code,'sm')+'<span><span class="k">相手（'+(PT.src==='real'?'本人の診断':'あなたの推測')+'）</span><b>'+esc(CT[PT.code].n)+'</b><br>相性（参考）：<b>'+cp.label+'</b></span></div>'+
-       '<button class="btn" onclick="showPT()">この相手へのアドバイスを見る</button>'+
-       '<button class="btn g" onclick="ptStart()">相手を入れなおす</button>';
+  if(PTS.length){
+    h+='<div class="ptl">';
+    PTS.forEach(function(p){ var e=ptEff(p); if(!e) return;
+      var cp=MYTYPE?compat(MYTYPE,PROF||{},e.code,e.prof||{}):null;
+      h+='<button class="ptrow" onclick="showPT('+p.id+')">'+illG(e.code,p.g,'xs')+'<span><span class="k">'+ptLab(p)+'（'+(p.real?'本人の診断':'あなたの推測')+'）</span><b>'+esc(ptName(p))+'</b>'+(cp?'<br><span class="k">相性（参考）：'+cp.label+'</span>':'')+'</span><span class="ar">›</span></button>'; });
+    h+='</div><button class="btn g" onclick="ptNew()">別の相手を入れる</button>';
   } else {
-    h+='<p style="margin:0;font-size:13.5px;color:var(--soft);line-height:1.8">気になる相手のタイプを入れると、<b>その人への誘い方・連絡の頻度・やらないほうがいいこと</b>が分かります。</p>'+
-       '<button class="btn" onclick="ptStart()">気になる相手のタイプを入れる</button>';
+    h+='<p style="margin:0;font-size:13.5px;color:var(--soft);line-height:1.8">気になる相手のタイプを入れると、<b>その人への誘い方・連絡の頻度・いま送る1通</b>が分かります。</p>'+
+       '<button class="btn" onclick="ptNew()">気になる相手のタイプを入れる</button>';
   }
   setHt('ptEntry',h);
 }
+function ptNew(){
+  if(PTS.length>=1 && !PAID){ openPaywall('<div class="quo" style="margin-bottom:4px"><b>2人目からはプラスで入れられます。</b><br>相手ごとに、誘い方といま送る1通が分かります。</div>','pt'); return; }
+  var id=1; PTS.forEach(function(p){ if(p.id>=id) id=p.id+1; });
+  PTS.push({id:id,st:STAGE||'pre',g:''}); PTCUR=id; savePTS(); ptStart();
+}
+function ptDrop(){ PTS=PTS.filter(function(p){ return ptEff(p); }); savePTS(); }
 function ptStart(){
+  var p=curPT(); if(!p){ ptNew(); return; }
   setHt('pt2Body',
-    '<div class="ctbox"><h5>相手のタイプの入れ方</h5>'+
-    '<button class="btn" onclick="pqStart()">相手のことを思い浮かべて、6問に答える</button>'+
+    '<div class="ctbox"><h5>'+ptLab(p)+' のタイプの入れ方</h5>'+
+    '<button class="btn" onclick="pqStart()">相手を思い浮かべて、6問に答える</button>'+
     '<button class="btn g" onclick="ptGridOpen()">16タイプから選ぶ</button>'+
     '<button class="btn g" onclick="ptPasteOpen()">相手から返ってきた結果を貼る</button></div>'+
     '<div class="ctbox"><h5>いちばん正確なのは、本人に診断してもらうこと</h5>'+
-    '<p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">リンクを送って答えてもらうと、結果がコピーで返ってきます。それを「結果を貼る」に入れてください。</p>'+
-    '<button class="btn g" onclick="copyInvite(this)">診断のリンクと誘い文をコピー</button></div>'+
-    '<p class="note" style="margin:0">相手の名前は入れません。この端末には「相手のタイプ」だけが残ります。</p>');
+    '<p style="margin:0;font-size:13px;color:var(--soft);line-height:1.8">リンクを送って答えてもらいます。<b>リンクにはあなたのタイプも名前も入りません</b>。相手が結果を返してくれたら「結果を貼る」に入れてください。推測と本人の診断は、両方残して比べられます。</p>'+
+    '<button class="btn g" onclick="copyInvite(this,false)">誘い文とリンクをコピー（タメ口）</button>'+
+    '<button class="btn g" onclick="copyInvite(this,true)">誘い文とリンクをコピー（ていねい）</button>'+
+    '<div class="quo" id="invSteps" style="display:none">① 相手とのトークに貼って送る<br>② 結果が返ってきたら、上の「結果を貼る」に貼る</div></div>'+
+    '<p class="note" style="margin:0">相手の名前は入れません。この端末には「相手'+p.id+'」のタイプだけが残ります。</p>'+
+    '<button class="btn g" onclick="ptCancel()">← 戻る</button>');
   go('pt2');
 }
+function ptCancel(){ ptDrop(); var p=curPT(); if(p&&ptEff(p)) showPT(p.id); else showScore(); }
 function pqStart(){ pqi=0; pqans=[]; pqRender(); }
 function pqRender(){
   var q=PQ[pqi], o='';
@@ -4627,14 +4835,15 @@ function pqRender(){
 function pqPick(v){
   pqans[pqi]=v; pqi++;
   if(pqi<PQ.length){ pqRender(); return; }
-  var sum=[0,0,0,0], prof={};
-  PQ.forEach(function(q,i){ var o=q.o[pqans[i]]; if(o.a) sum[o.a[0]]+=o.a[1]; if(o.c) sum[3]-=.6; if(o.p) for(var k in o.p) prof[k]=o.p[k]; });
-  var code=''; for(var a=0;a<4;a++) code+=CTK[a][sum[a]>=0?0:1];
+  var sum=[0,0,0,0], prof={}, unk=[];
+  PQ.forEach(function(q,i){ var o=q.o[pqans[i]]; if(o.a) sum[o.a[0]]+=o.a[1]; if(o.p) for(var k in o.p) prof[k]=o.p[k]; });
+  var code=''; for(var a=0;a<4;a++){ if(sum[a]===0) unk.push(a); code+=CTK[a][sum[a]>0?0:(sum[a]<0?1:(a===3?0:1))]; }
+  prof.unk=unk;
   setPTx(code,prof,'guess');
 }
 function ptGridOpen(){
   var h='<div class="tgrid">';
-  ORD.forEach(function(c){ h+='<button onclick="setPTx(\''+c+'\',{},\'pick\')">'+ill(c,'xs')+'<span class="n2">'+CT[c].n+'</span><span class="c2">'+CT[c].t+'</span></button>'; });
+  ORD.forEach(function(c){ h+='<button onclick="setPTx(\''+c+'\',{},\'guess\')">'+ill(c,'xs')+'<span class="n2">'+CT[c].n+'</span><span class="c2">'+CT[c].t+'</span></button>'; });
   setHt('pt2Body','<p class="note" style="margin:0">あなたの印象でOK。あとで入れなおせます。</p>'+h+'</div><button class="btn g" onclick="ptStart()">← 戻る</button>');
 }
 function ptPasteOpen(){
@@ -4643,113 +4852,193 @@ function ptPasteOpen(){
 function ptPasteGo(){
   var r=parseCode(document.getElementById('ptPaste').value||'');
   if(!r){ setHt('ptPasteErr','<div class="quo">コードが見つかりませんでした。「コード：」のあとの英字4文字（例：SDBC）が入っているか確かめてください。</div>'); return; }
+  var p=curPT(); if(p&&r.g) p.g=r.g;
   setPTx(r.code,r.prof,'real');
 }
 function setPTx(code,prof,src){
-  PT={code:code,prof:prof||{},src:src==='real'?'real':'guess'}; lsSet('yomitoki:pt',PT);
-  showPT();
+  var p=curPT(); if(!p){ ptNew(); p=curPT(); }
+  p[src==='real'?'real':'guess']={code:code,prof:prof||{}}; savePTS();
+  showPT(p.id);
 }
-function showPT(){
-  if(!PT||!CT[PT.code]){ ptStart(); return; }
+function ptGen(g){ var p=curPT(); if(!p) return; p.g=g; savePTS(); showPT(p.id); }
+function ptDelete(){ var id=PTCUR; PTS=PTS.filter(function(p){ return p.id!==id; }); PTCUR=PTS.length?PTS[0].id:0; savePTS(); showScore(); }
+var AXJ=['返事の速さ','気持ちの出し方','一通の長さ','相手による差'];
+function guessDiff(p){
+  if(!p.real||!p.guess) return '';
+  var a=p.guess.code, b=p.real.code, li=[];
+  for(var k=0;k<4;k++) if(a[k]!==b[k]) li.push('<li><b>'+AXJ[k]+'</b>：あなたの推測は「'+(a[k]===CTK[k][0]?CTAX[k][0]:CTAX[k][1])+'」、本人は「'+(b[k]===CTK[k][0]?CTAX[k][0]:CTAX[k][1])+'」</li>');
+  return '<div class="ctbox"><h5>あなたの推測と、本人の診断の違い</h5><p style="margin:0;font-size:13px;line-height:1.8">推測：<b>'+esc(CT[a].n)+'</b>　→　本人：<b>'+esc(nameG(b,p.g))+'</b></p>'+
+    (li.length?'<ul class="dl">'+li.join('')+'</ul><p class="note" style="margin:0">違っていたところが、あなたが相手を読み違えやすいところです。アドバイスは本人の診断で出しています。</p>':'<p class="note" style="margin:0">4つとも同じでした。あなたの見立ては正確です。</p>')+'</div>';
+}
+function polOn(p){ return p&&p.reg?p.reg==='polite':((p&&p.st||STAGE)==='kon'); }
+function ptReg(v){ var p=curPT(); if(!p) return; p.reg=v; savePTS(); showPT(p.id); }
+function showPT(id){
+  if(id) PTCUR=id; savePTS();
+  var p=curPT(), e=ptEff(p); if(!e){ ptStart(); return; }
   var me=MYTYPE&&CT[MYTYPE]?MYTYPE:null;
-  var cp=me?compat(me,PROF||{},PT.code,PT.prof||{}):null;
-  var h='<div class="ctcard ptcard"><span class="wm">相手の連絡タイプ（'+(PT.src==='real'?'本人の診断':'あなたの推測')+'）</span>'+ill(PT.code,'big')+'<span class="nm mincho">'+esc(CT[PT.code].n)+'</span><span class="tg">'+esc(CT[PT.code].t)+'</span></div>';
-  if(cp){
-    h+='<div class="verd"><b>相性（参考）：'+cp.label+'</b><br>'+(cp.good[0]?'◎ '+esc(cp.good[0])+'<br>':'')+(cp.bad[0]?'△ '+esc(cp.bad[0]):'')+'</div>';
-  } else h+='<div class="quo">先にあなた自身の診断をすると、相性も出ます。<button class="btn g" style="margin-top:8px" onclick="startCT(\'setup\')">自分の診断をする（12問）</button></div>';
+  var cp=me?compat(me,PROF||{},e.code,e.prof||{}):null;
+  var gsw=GDEF[e.code]?'<div class="gsw"><button class="'+(p.g==='m'?'on':'')+'" onclick="ptGen(\'m\')">男の子</button><button class="'+(p.g==='f'?'on':'')+'" onclick="ptGen(\'f\')">女の子</button></div>':'';
+  var h='<div class="ctcard ptcard"><span class="wm">'+ptLab(p)+'の連絡タイプ（'+(p.real?'本人の診断':'あなたの推測')+'）</span>'+illG(e.code,p.g,'big')+'<span class="nm mincho">'+esc(ptName(p))+'</span>'+gsw+'<span class="tg">'+esc(CT[e.code].t)+'</span></div>';
+  if(cp) h+='<div class="verd"><b>相性（参考）：'+cp.label+'</b><br>'+(cp.good[0]?'◎ '+esc(cp.good[0])+'<br>':'')+(cp.bad[0]?'△ '+esc(cp.bad[0]):'')+'</div>';
+  else h+='<div class="quo">先にあなた自身の診断をすると、相性も出ます。<button class="btn g" style="margin-top:8px" onclick="startCT(\'setup\')">自分の診断をする（12問）</button></div>';
+  h+=guessDiff(p);
   if(PAID){
-    h+=ptAdvice(me,cp);
+    h+=ptNow(p,e)+ptAdvice(me,cp,p,e);
   } else {
     h+='<div class="lockb"><h5>プラスで見られること</h5><ul>'+
-       '<li><b>この相手への誘い方</b>（文の例つき）</li><li><b>ちょうどいい連絡の頻度と返す速さ</b></li><li><b>この相手にやらないほうがいいこと</b></li><li>あなたの査定結果から、<b>この相手で特に気をつけること</b></li><li>あなたと<b>合いやすいタイプ／すれ違いやすいタイプ</b>（16タイプ全部）</li></ul>'+
+       '<li><b>いま送る1通</b>：「誘いたい」「返事が来ない」など、状況を選ぶとこの相手向けの文が出ます</li><li><b>この相手への誘い方</b>と、<b>ちょうどいい連絡の頻度</b></li><li><b>この相手にやらないほうがいいこと</b></li><li>あなたの査定結果から、<b>この相手で特に気をつけること</b></li><li>相手を<b>何人でも</b>入れて比べられる</li></ul>'+
        '<button class="btn" onclick="openPaywall(\'\',\'pt\')">プラスで見る（7日間 ¥480）</button></div>';
   }
   h+='<p class="note" style="margin:0">タイプは、返信のくせを大まかに分けたものです。相性も含めて、決めつけではなく<b>参考</b>として使ってください。</p>';
-  h+='<button class="btn g" onclick="ptStart()">相手を入れなおす</button><button class="btn g" onclick="showScore()">← 自分の査定結果に戻る</button>';
+  h+='<button class="btn g" onclick="ptStart()">'+ptLab(p)+'を入れなおす（推測・本人の診断）</button><button class="btn g" onclick="showScore()">← 自分の査定結果に戻る</button><button class="lnk" onclick="ptDelete()">'+ptLab(p)+'をこの端末から消す</button>';
   setHt('pt2Body',h);
   go('pt2');
 }
-function ptAdvice(me,cp){
-  var p=PT.code, pp=PT.prof||{}, mp=PROF||{}, inv=[], fq=[], ng=[], ex=[];
+/* ---- いま送る1通（状況 × 関係の段階 × 相手のタイプ） ---- */
+var NOWS={
+ pre:[['inv','誘いたい'],['wait','返事が来ない'],['long','久しぶりに送りたい'],['thx','会ったあとのお礼'],['awk','気まずくなった']],
+ couple:[['inv','次に会う約束をしたい'],['wait','返事が来ない'],['call','電話したい'],['thx','会ったあと'],['awk','気まずくなった']],
+ kon:[['inv','次のお誘い'],['wait','お返事が来ない'],['thx','お会いしたあとのお礼'],['awk','気まずくなった'],['ser','これからの話をしたい']]
+};
+var NOWT={
+ inv:{c:['この前話してたお店、行ってみない？来週の金曜か土曜どう？','来週の金曜か土曜、ごはんどう？'],p:['先日お話に出たお店、よろしければご一緒しませんか。来週の土曜か日曜のお昼はいかがですか','来週の土曜か日曜、お食事はいかがですか'],
+      cc:['次に会えるの、来月のこの2つの週末のどっちかだとうれしい。分かったら教えて','来月のどっちかの週末、会えたらうれしい']},
+ wait:{c:['この前話してた映画、配信きてたよ','駅前に新しいパン屋できてた'],p:['先日お話しした映画、配信が始まっていました','駅前に新しいパン屋さんができていました'],
+      cc:['忙しいかな？落ち着いたら声聞かせて','おつかれさま、無理しないでね']},
+ long:{c:['久しぶり！さっきあのお店の前通って、思い出して連絡しちゃった。元気？','久しぶり！元気？'],p:['ご無沙汰しています。先日お話ししたお店の前を通って、思い出してご連絡しました。お元気ですか','ご無沙汰しています。お元気ですか']},
+ thx:{c:['今日はありがとう！話してて本当に楽しかった。また行こう','今日ありがとう！楽しかった'],p:['本日はありがとうございました。お話がとても楽しかったです。またお会いできればうれしいです','本日はありがとうございました。とても楽しかったです'],
+      cc:['今日ありがとう。久しぶりに話せてうれしかった。次はあそこ行きたいな','今日ありがとう、うれしかった']},
+ awk:{c:['この前は言い方がきつかったかも、ごめんね。また普通に話せたらうれしい','この前はごめんね'],p:['先日は言葉が足りず、失礼しました。またお話しできればうれしいです','先日は失礼しました'],
+      cc:['この前はごめんね。ちゃんと話したいから、落ち着いたら少し電話できる？','この前はごめんね']},
+ call:{cc:['今夜、少しだけ電話できる？10分くらいでいいよ','今夜ちょっと電話できる？']},
+ ser:{p:['次にお会いしたときに、これからのことを少しお話しできればと思っています。ご都合のよい日を教えてください','これからのことを、次にお会いしたときにお話しできればうれしいです']}
+};
+function ptNow(p,e){
+  var st=p.st||STAGE||'pre', list=NOWS[st]||NOWS.pre, o='';
+  list.forEach(function(z){ o+='<button onclick="ptNowPick(\''+z[0]+'\')" id="nw_'+z[0]+'">'+esc(z[1])+'</button>'; });
+  var reg=st==='couple'?'':'<div class="regsw"><button class="'+(!polOn(p)?'on':'')+'" onclick="ptReg(\'casual\')">タメ口</button><button class="'+(polOn(p)?'on':'')+'" onclick="ptReg(\'polite\')">ていねい</button></div>';
+  return '<div class="ctbox nowb"><h5>いま送る1通（'+ptLab(p)+'向け）</h5><p class="note" style="margin:0">いまの状況を選んでください。関係：'+esc(stageN(st))+'</p>'+reg+'<div class="chips nowc">'+o+'</div><div id="nowOut"></div></div>';
+}
+function ptNowPick(sit){
+  var p=curPT(), e=ptEff(p); if(!e) return;
+  var st=p.st||STAGE||'pre', c=e.code, pol=polOn(p)&&st!=='couple', T=NOWT[sit]||{};
+  var arr=(st==='couple'&&T.cc)?T.cc:(pol?(T.p||T.c):(T.c||T.cc||T.p));
+  var short=c[2]==='B', msg=arr[short?1:0], why=[];
+  why.push(short?'短文派の相手なので、<b>1〜2行</b>にしています。':'言葉で伝える相手なので、<b>具体的なひとこと</b>を入れています。');
+  if(c[0]==='S'&&(sit==='inv'||sit==='wait'||sit==='call')){ msg+=pol?'\nお返事はゆっくりで大丈夫です':'\n返事はゆっくりで大丈夫だよ'; why.push('返事がゆっくりな相手なので、<b>急がせない一言</b>を足しています。'); }
+  if(c[1]==='T'&&sit==='inv') why.push('気持ちを出さない相手には、<b>行き先と日にちの2択</b>が答えやすい。');
+  if(sit==='wait') why.push('返事がないときは、<b>返事のいらない話題</b>で1通だけ。'+(c[0]==='S'?'この相手なら3日以上あけてから。':'2〜3日あけてから。'));
+  if(e.prof&&e.prof.decl&&sit==='inv') why.push('最近断られが続いているなら、<b>2週間ほどあけてから</b>のほうが受け取りやすい。');
+  var bs=document.querySelectorAll('.nowc button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on',bs[i].id==='nw_'+sit);
+  setHt('nowOut','<div class="nowm" id="nowMsg">'+esc(msg).replace(/\n/g,'<br>')+'</div><button class="btn" onclick="copyText(document.getElementById(\'nowMsg\').innerText,this)">この文をコピー</button><p class="note" style="margin:0">'+why.join('<br>')+'<br>※ 型から作った文です。あなたの言葉に直して使ってください。</p>');
+}
+function ptAdvice(me,cp,P,E){
+  var p=E.code, pp=E.prof||{}, mp=PROF||{}, st=P.st||STAGE||'pre', pol=polOn(P), unk=pp.unk||[], inv=[], fq=[], ng=[];
+  function known(a){ return unk.indexOf(a)<0; }
   /* 誘い方 */
-  if(pp.iv!=null&&pp.iv>=2) inv.push('この相手は<b>こちらから誘われるのを待っている</b>ことが多い。遠慮せず、あなたから具体的に。');
+  if(st==='couple') inv.push('次に会う日は、<b>候補を2つに絞って置いておく</b>。相手は選ぶだけで済みます。');
+  if(st==='kon') inv.push('お誘いは<b>行き先と日時の2択を、ていねいに</b>。断られても一度引いて、お相手に選んでもらう。');
+  if(pp.me) inv.push('相手から誘ってくることは少なめ。<b>誘うのはあなたからでいい</b>。ただ2回続けて流れたら、一度ボールを相手に渡す。');
+  else if(pp.iv!=null&&pp.iv>=2) inv.push('この相手は<b>誘われるのを待っている</b>ことが多い。遠慮せず、あなたから具体的に。');
   else if(pp.iv===0) inv.push('相手から誘ってくることが多いタイプ。<b>誘われたら、その場で日にちまで返す</b>と次も来やすい。');
-  if(p[0]==='S') inv.push('返事がゆっくりなので、<b>前日や当日の誘いは避けて、1〜2週間先の2択</b>で。');
-  else inv.push('返事が速いので、<b>話が盛り上がっているその場で誘う</b>のがいちばん決まりやすい。');
-  if(p[1]==='T') inv.push('気持ちを出さないタイプには、<b>「行きたい？」ではなく「この店どう？」</b>と、答えやすい形で。');
-  else inv.push('気持ちが文面に出るタイプ。<b>「楽しみ！」と返ってきたら脈あり</b>のサインとして素直に受け取っていい。');
+  if(pp.decl) inv.push('最近断られが続いているなら、<b>2週間ほどあけて</b>、相手から声がかかる余地を作る。');
+  if(known(0)) inv.push(p[0]==='S'?'返事がゆっくりなので、<b>前日や当日の誘いは避けて、1〜2週間先の2択</b>で。':'返事が速いので、<b>話が盛り上がっているその場で誘う</b>のがいちばん決まりやすい。');
+  if(known(1)) inv.push(p[1]==='T'?'気持ちを出さないタイプには、<b>「行きたい？」ではなく「この店どう？」</b>と、答えやすい形で。':'気持ちが文面に出るタイプ。返事の温度は、<b>そのまま受け取って大丈夫</b>なことが多い。');
   /* 頻度と速さ */
-  if(me&&me[0]==='Q'&&p[0]==='S') fq.push('相手はゆっくり返すタイプ。<b>あなたの即レスに合わせてもらおうとしない</b>。1往復ごとに待つ、くらいがちょうどいい。');
-  else if(me&&me[0]==='S'&&p[0]==='Q') fq.push('相手は速く返すタイプ。<b>遅くなりそうなときは「夜返すね」と一言</b>だけ先に。');
-  else fq.push('返す速さは近い二人。<b>いまのペースのままで大丈夫</b>です。');
+  if(known(0)){
+    if(me&&me[0]==='Q'&&p[0]==='S') fq.push('相手はゆっくり返すタイプ。<b>あなたの即レスに合わせてもらおうとしない</b>。1往復ごとに待つ、くらいがちょうどいい。');
+    else if(me&&me[0]==='S'&&p[0]==='Q') fq.push('相手は速く返すタイプ。<b>遅くなりそうなときは「夜返すね」と一言</b>だけ先に。');
+    else fq.push('返す速さは近い二人。<b>いまのペースのままで大丈夫</b>です。');
+  }
   if(pp.fq!=null) fq.push('相手は<b>'+PROFN.fq[pp.fq]+'</b>。'+(pp.fq>=2?'毎日送らなくても、気持ちが冷めたとは受け取られません。':'あまり間をあけすぎると、さみしく感じさせます。'));
-  if(p[2]==='B') fq.push('相手は短文派。<b>3行以上の長文は、返事を遅くする原因</b>になります。');
-  else fq.push('相手は言葉で伝える派。<b>スタンプだけの返事は素っ気なく見えます</b>。一言添えて。');
+  if(known(2)) fq.push(p[2]==='B'?'相手は短文派。<b>3行以上の長文は、返事を遅くする原因</b>になります。':'相手は言葉で伝える派。<b>スタンプだけの返事は素っ気なく見えます</b>。一言添えて。');
+  if(unk.length) fq.push('<span class="k">「分からない」と答えたところ（'+unk.map(function(a){return AXJ[a]}).join('・')+'）は、決めつけずに外しています。</span>');
   /* NG */
-  if(p[0]==='S') ng.push('「既読なのに」「返事まだ？」など、<b>返事の遅さに触れること</b>');
-  if(p[1]==='T') ng.push('「本当はどう思ってるの？」と<b>気持ちを問い詰めること</b>');
-  if(p[2]==='B') ng.push('<b>長文を何通も続けて送る</b>こと');
-  if(p[2]==='L') ng.push('相手の長文に、<b>スタンプ1つだけで返す</b>こと');
-  if(p[3]==='C') ng.push('<b>ほかの人への態度と比べる</b>こと（相手で変えるのは、この人のふつう）');
-  if(p[3]==='F') ng.push('<b>自分だけ特別扱いしてほしがる</b>こと（誰にでも同じなのが、この人の誠実さ）');
+  if(known(0)&&p[0]==='S') ng.push('「既読なのに」「返事まだ？」など、<b>返事の遅さに触れること</b>');
+  if(known(1)&&p[1]==='T') ng.push('「本当はどう思ってるの？」と<b>気持ちを問い詰めること</b>');
+  if(known(2)&&p[2]==='B') ng.push('<b>長文を何通も続けて送る</b>こと');
+  if(known(2)&&p[2]==='L') ng.push('相手の長文に、<b>スタンプ1つだけで返す</b>こと');
+  if(known(3)&&p[3]==='C') ng.push('<b>ほかの人への態度と比べる</b>こと（相手で変えるのは、この人のふつう）');
   if(mp.oi>=2) ng.push('あなたのくせの<b>追いLINE</b>。この相手には、1通目の返事が来るまで2通目を送らない');
-  /* 例文 */
-  ex.push(p[0]==='S'?'「再来週の土曜か日曜、〇〇行かない？ゆっくりで大丈夫だから、空いてたら教えて」':'「それ行きたい！来週の金曜とかどう？」');
-  ex.push(p[1]==='T'?'「この前の話、ちょっと気になってた。〇〇ってどうなった？」':'「今日楽しかった！また話そ」');
-  ex.push(p[2]==='B'?'「お疲れさま！〇〇見て思い出した笑」（短く、返事のいらない1通）':'「〇〇の話、もっと聞きたい。今度会ったとき教えて」');
-  var h='<div class="sect"><h3>この相手への誘い方</h3><div class="ddb ok"><ul>'+inv.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div></div>';
-  h+='<div class="sect"><h3>連絡の頻度と、返す速さ</h3><div class="ddb ok"><ul>'+fq.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div></div>';
-  h+='<div class="sect"><h3>やらないほうがいいこと</h3><div class="ddb ng"><ul>'+ng.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div></div>';
-  h+='<div class="sect"><h3>この相手に送るなら（例）</h3><div class="pc"><p>'+ex.map(esc).join('<br><br>')+'</p></div></div>';
-  if(cp&&cp.bad.length) h+='<div class="sect"><h3>二人がすれ違いやすいところ</h3><div class="ddb ng"><ul>'+cp.bad.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div></div>';
+  if(mp.kd>=2&&p[0]==='S') ng.push('既読のまま止まったときに<b>理由を探しに行く</b>こと（SNSを見る・共通の知り合いに聞く）');
+  function sec(t,body,open){ return '<details class="fold"'+(open?' open':'')+'><summary><h3>'+t+'</h3></summary><div class="sect">'+body+'</div></details>'; }
+  function ul(cls,a){ return '<div class="ddb '+cls+'"><ul>'+a.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>'; }
+  var h=sec('この相手への誘い方',ul('ok',inv),true);
+  if(fq.length) h+=sec('連絡の頻度と、返す速さ',ul('ok',fq));
+  if(ng.length) h+=sec('やらないほうがいいこと',ul('ng',ng));
+  if(cp&&cp.bad.length) h+=sec('二人がすれ違いやすいところ',ul('ng',cp.bad.map(esc)));
   var sc=SCORE||loadLast();
   if(sc){
-    var wk=DIMK.slice().sort(function(a,b){return sc.dim[a]-sc.dim[b]})[0];
-    var WK={emp:'この相手が落ち込んでいるときは、意見より先に「そっか」の1行を。',dist:'この相手には、返事の長さと回数を相手より「少しだけ多い」くらいに。',time:'返事が止まったら、この相手でも1週間あけて軽い1通。',inv:'この相手を誘うときは、行き先と日にちの2択をセットで。',light:'不安になった夜は送らない。この相手にも、翌日に軽い1通。'};
-    h+='<div class="sect"><h3>あなたの査定結果から、この相手で気をつけること</h3><div class="nxt"><h4>'+DIMS[wk]+'（'+sc.dim[wk]+'点）</h4><p>'+WK[wk]+'</p></div></div>';
+    var wk=DIMK.slice().sort(function(a,b){return sc.dim[a]-sc.dim[b]})[0], sl=p[0]==='S';
+    var WK={emp:sl?'この相手は気持ちを話すまでに時間がかかります。話してくれたら、意見より先に「そっか」の1行を。':'この相手は話が速いぶん、落ち込んだ話もさらっと来ます。流さずに「大丈夫？」の1行を。',
+            dist:p[2]==='B'?'短文派の相手です。返事の長さを、相手の1.5倍までに。':'長めに書く相手です。あなたも2〜3行で応えると、距離がちょうどよくなります。',
+            time:sl?'返事が止まっても、この相手なら3日は待つ。そのあと、返事のいらない1通を。':'この相手は返事が速いぶん、止まったときは理由があることが多い。1通だけ気づかいを。',
+            inv:sl?'この相手は1〜2週間先の2択で誘う。当日・前日の誘いは避ける。':'この相手は盛り上がったその場で誘う。「行こうよ、来週どう？」を逃さない。',
+            light:sl?'ゆっくり返す相手です。不安な夜に送りたくなったら、下書きに入れて翌朝読み直す。':'返事の速い相手でも、止まった夜の連投は逆効果。送るのは1通まで。'};
+    h+=sec('あなたの査定結果から、この相手で気をつけること','<div class="nxt"><h4>'+DIMS[wk]+'（'+sc.dim[wk]+'点）× '+esc(ptName(P))+'</h4><p>'+WK[wk]+'</p></div>');
   }
   if(me){
     var all=ORD.map(function(c){ return {c:c,r:compat(me,mp,c,{})}; }).sort(function(a,b){ return b.r.s-a.r.s; });
-    var row=function(z){ return '<div class="mrow">'+ill(z.c,'xs')+'<span class="n2">'+esc(CT[z.c].n)+'</span><span class="lb2">'+z.r.label+'</span></div>'; };
-    h+='<div class="sect"><h3>あなた（'+esc(nameOf(me))+'）と合いやすいタイプ</h3><div class="mlist">'+all.slice(0,4).map(row).join('')+'</div></div>';
-    h+='<div class="sect"><h3>すれ違いやすいタイプ</h3><div class="mlist">'+all.slice(-4).reverse().map(row).join('')+'</div>'+
-       '<details class="fold"><summary><h3>16タイプ全部を見る</h3></summary><div class="sect"><div class="mlist">'+all.map(row).join('')+'</div></div></details></div>';
+    var row=function(z){ return '<div class="mrow">'+ill(z.c,'xs')+'<span class="n2">'+esc(z.c===me?nameOf(z.c)+'（あなたと同じ）':CT[z.c].n)+'</span><span class="lb2">'+z.r.label+'</span></div>'; };
+    h+=sec('あなた（'+esc(nameOf(me))+'）と合いやすい／すれ違いやすいタイプ',
+      '<p class="note" style="margin:0">相手の好みを入れない、タイプだけで見た目安です（上の相性とは少し違うことがあります）。</p><p class="mh">合いやすい</p><div class="mlist">'+all.slice(0,4).map(row).join('')+'</div><p class="mh">すれ違いやすい</p><div class="mlist">'+all.slice(-4).reverse().map(row).join('')+'</div>');
   }
   return h;
 }
 
 /* ---- 課金画面を、開いた場所に合わせて書き分ける（価格・プランは今まで通り。決済はβのまま） ---- */
-var PWMODE='';
+var PWMODE='', PWA0='', PWB0='';
 var _openPaywall=openPaywall;
 openPaywall=function(head,mode){
   PWMODE=mode||'';
   _openPaywall(head);
+  var pa=document.querySelector('#pA .pd'), pb=document.querySelector('#pB .pd');
+  if(!PWA0&&pa){ PWA0=pa.innerHTML; PWB0=pb.innerHTML; }
   if(PWMODE==='pt'){
-    setHt('pwFree','<li>あなたの連絡タイプと、好みの診断</li><li>連絡力の査定（100点満点）と、5つの項目</li><li>もっと良くなる3つ・全問の答え合わせ</li><li>相手のタイプと、相性のひとこと</li>');
-    setHt('pwPlus','<li><b>この相手への誘い方</b>（文の例つき）</li><li><b>ちょうどいい連絡の頻度と返す速さ</b></li><li><b>この相手にやらないほうがいいこと</b></li><li>あなたの査定結果から、この相手で特に気をつけること</li><li>あなたと<b>合いやすいタイプ／すれ違いやすいタイプ</b>（16タイプ全部）</li><li>おまけのLINE読み解きの、詳しい版と返信案のコピー無制限</li>');
-    setHt('pwLab','CONTACT SCORE'); var sc=SCORE||loadLast(); setTx('pwScore', sc?sc.total+'点':'—'); setTx('pwScoreNote', PT&&CT[PT.code]?'相手：'+CT[PT.code].n+'（'+(PT.src==='real'?'本人の診断':'あなたの推測')+'）':'');
+    setHt('pwFree','<li>あなたの連絡タイプと、好みの診断</li><li>連絡力の査定（100点満点）と5つの項目、もっと良くなる3つ、答え合わせ</li><li>相手1人ぶんのタイプと、相性のひとこと</li><li>推測と本人の診断の違い</li>');
+    setHt('pwPlus','<li><b>いま送る1通</b>：状況を選ぶと、この相手向けの文が出ます（タメ口／ていねい）</li><li><b>この相手への誘い方・ちょうどいい連絡の頻度</b></li><li><b>この相手にやらないほうがいいこと</b>、二人がすれ違いやすいところ</li><li>あなたの査定結果から、この相手で特に気をつけること</li><li>相手を<b>何人でも</b>入れて比べられる</li><li>おまけのLINE読み解きの詳しい版と、返信案のコピー無制限</li>');
+    var p=curPT(), e=ptEff(p), cp=(e&&MYTYPE)?compat(MYTYPE,PROF||{},e.code,e.prof||{}):null;
+    setHt('pwLab','PARTNER'); setTx('pwScore', e?ptName(p):'—'); setTx('pwScoreNote', cp?'相性（参考）：'+cp.label:'');
+    var ps=document.getElementById('pwScore'); if(ps) ps.style.fontSize=e?'32px':'';
+    if(pa){ pa.innerHTML='相手ごとのアドバイス／いま送る1通／詳しい読み解き'; pb.innerHTML='相手を何人でも／推測と本人の比較／長期の記録'; }
     setHt('pwSample','');
     var fb=document.getElementById('freeBtn'); if(fb) fb.style.display='none';
   } else {
     setHt('pwFree',PWFREE0); setHt('pwPlus',PWPLUS0); setHt('pwLab','RELATIONSHIP SCORE');
+    var ps2=document.getElementById('pwScore'); if(ps2) ps2.style.fontSize='';
+    if(pa&&PWA0){ pa.innerHTML=PWA0; pb.innerHTML=PWB0; }
   }
 };
 var PWFREE0='', PWPLUS0='';
 var _afterUnlock=afterUnlock;
-afterUnlock=function(){ if(PWMODE==='pt'){ setHt('betaNote',''); showPT(); return; } _afterUnlock(); };
+afterUnlock=function(){ if(PWMODE==='pt'){ setHt('betaNote',''); var p=curPT(); if(p&&!ptEff(p)) ptStart(); else showPT(PTCUR); return; } _afterUnlock(); };
 var _unlock=unlock;
 unlock=function(){
-  var was=PAID; _unlock();
-  if(!was && PWMODE==='pt'){
+  var was=PAID;
+  if(PWMODE!=='pt'){ _unlock(); return; }
+  if(was){ afterUnlock(); return; }
+  _unlock();
+  {
     setHt('betaNote','<div class="quo" style="margin-bottom:4px"><b>β版のため、いまは決済なしで全部開放しています。</b><br>選んだプラン：<b>'+PLANN[PLAN]+'</b>（本番ではここで購入手続きになります）<button class="btn" style="margin-top:10px" onclick="afterUnlock()">この相手へのアドバイスを見る</button></div>');
-  } else if(was && PWMODE==='pt'){ showPT(); }
+  }
 };
 
-/* ---- シェア画像：タイプ名＋点数 ---- */
-var _buildShareImg=buildShareImg;
+/* ---- シェア：点数入り／タイプだけ ---- */
+var SHMODE='type';
+function shareSC(){ return (SHMODE==='score'&&SCORE)?SCORE:null; }
+function shareAs(m){ SHMODE=m; shareCT(); }
 shareText=function(c){
-  var sc=SCORE;
-  return (sc?'異性との連絡力、'+sc.total+'点でした\n':'')+'私の連絡タイプは【'+c.n+'】\n「'+c.k+'」\n\nあなたは何点？\n'+baseURL()+'\n#よみとき #連絡力査定';
+  var sc=shareSC();
+  return (sc?'異性との連絡力、'+sc.total+'点でした\n':'')+'私の連絡タイプは【'+(CT[MYTYPE]?nameOf(MYTYPE):c.n)+'】\n「'+c.k+'」\n\n'+(sc?'あなたは何点？':'あなたは何タイプ？')+'\n'+baseURL()+'\n#よみとき #連絡力査定';
+};
+
+/* ---- おまけの読み解き：査定で入れた相手のタイプを使える ---- */
+var _buildPT=buildPT;
+buildPT=function(){
+  _buildPT();
+  var h='';
+  PTS.forEach(function(p){ var e=ptEff(p); if(e) h+='<button onclick="setPT(\''+e.code+'\')">'+illG(e.code,p.g,'xs')+'<span class="n2">'+ptLab(p)+'：'+esc(ptName(p))+'</span><span class="c2">査定で入れた相手</span></button>'; });
+  if(h){ var g=document.getElementById('ptGrid'); if(g) g.insertAdjacentHTML('afterbegin',h); }
 };
 
 function openOmake(){ go('setup'); var d=document.getElementById('omake'); if(d){ d.open=true; setTimeout(function(){ d.scrollIntoView({block:'start'}); },60); } }
